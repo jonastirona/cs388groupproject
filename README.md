@@ -11,7 +11,9 @@ frontend:
 Backend / Database
 - supabase: auth, storage, rest api
 
+
 wireframe:
+```text
 home
  ├── routes
  │     ├── route list
@@ -28,3 +30,4 @@ home
  │     └── Add Friend / Friend Requests
  └── Profile/Settings
        └── Edit Profile / Logout
+```
