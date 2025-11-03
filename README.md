@@ -14,20 +14,21 @@ Backend / Database
 
 wireframe:
 ```text
-home
- ├── routes
- │     ├── route list
- │     │     └── Route Detail → Start Lap → Tracking → Lap Results → Friends/Global Leaderboard
- │     ├── My Routes (user-created)
- │     │     └── Route Detail → Start Lap → Tracking → Lap Results → Friends/Global Leaderboard
- │     └── Create Route
- │           └── Route Creation Flow
- ├── Leaderboard
- │     ├── Friends Leaderboard (points, not time)
- │     └── Global Leaderboard (points, not time)
- ├── Friends
- │     ├── Friend List
+Home
+ ├── Feed
+ │     ├── Post List
+ │     │     └── Post Detail → Like / Comment / Share → View Profile
+ │     └── Create Post → Upload Photo/Audio → Add Description → Post
+ ├── My Garage
+ │     ├── My Cars List
+ │     │     └── Car Detail → Mod Tree → Add Mod → Add Photo/Record Exhaust Sound 
+ │     └── Add New Car
+ ├── Explore
+ │     ├── Popular Builds
+ │     └── Nearby Shops (Map)
+ ├── Community
+ │     ├── Friends List
  │     └── Add Friend / Friend Requests
- └── Profile/Settings
-       └── Edit Profile / Logout
+ └── Profile / Settings
+       └── Edit Profile / My Posts / Logout
 ```
