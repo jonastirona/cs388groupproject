@@ -1,18 +1,14 @@
 # cs388groupproject
 
-## tech stack:
-frontend:
-- language: kotlin
-- ui: android
-- maps/route display/tracking: google maps sdk
-- use map + location updates to mark start/finish, measure lap
-- location tracking: FusedLocationProviderClient
+## App Overview
+ModMyCar is a mobile app for car enthusiasts of all ages to learn about modding, track build progress, and share projects with the community. Using the phone’s camera, microphone, and sensors, users can capture build photos, record performance stats, and showcase exhaust sounds. The app combines educational tools, cost estimates, and social features to help users plan upgrades, explore new ideas, and stay engaged in their car modding journey.
 
-Backend / Database
-- supabase: auth, storage, rest api
+## App Spec
+
+### User Features
 
 
-wireframe:
+### Navigation/Flows
 ```text
 Home
  ├── Feed
@@ -32,3 +28,15 @@ Home
  └── Profile / Settings
        └── Edit Profile / My Posts / Logout
 ```
+
+## Tech Stack
+frontend:
+- language: kotlin
+- ui: android
+- maps/route display/tracking: google maps sdk
+- use map + location updates to mark start/finish, measure lap
+- location tracking: FusedLocationProviderClient
+
+Backend / Database
+- supabase: auth, storage, rest api
+
