@@ -120,7 +120,12 @@ Home
 
 ## Wireframes
 
-[Add picture of your hand sketched wireframes in this section] 
+[Add picture of your hand sketched wireframes in this section]
+
+![flow1-min](https://github.com/user-attachments/assets/6ca66a18-fd8c-4c66-8171-520b0ed34e8a)
+![flow2-min](https://github.com/user-attachments/assets/6deb6376-0a97-4aa4-b7dc-c3b9d395e1df)
+![flow3-min](https://github.com/user-attachments/assets/e0993d73-461f-4c3f-b59f-26c92ecef03b)
+![flow4-min](https://github.com/user-attachments/assets/99463aef-9ee4-4c9a-8444-21587ec13c69)
 
 <br>
 
