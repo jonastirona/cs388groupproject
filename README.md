@@ -1,4 +1,4 @@
-# Milestone 1 - ModMyCar (Unit 7)
+# ModMyCar
 
 ## Table of Contents
 
