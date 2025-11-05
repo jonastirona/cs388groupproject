@@ -116,7 +116,6 @@ Home
 * Users can navigate between tabs at any time.
 * Within each tab, screens follow the flow outlined above.
 * Actions such as liking, commenting, sharing, or adding mods occur within the relevant detail screens.
-```
 
 ## Wireframes
 
@@ -129,8 +128,4 @@ Home
 
 <br>
 
-
-
-
-
-<br>
+```
