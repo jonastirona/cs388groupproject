@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlinx.serialization) // Serialization plugin
+
 }
 
 android {
@@ -45,4 +47,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.kotlinx.serialization.json) // Serialization library
+    implementation(libs.androidx.lifecycle.viewmodel.ktx) // ViewModelScope
+    implementation(libs.androidx.lifecycle.runtime.ktx)   // Lifecycle support
+    implementation(libs.kotlinx.coroutines.android)       // Main dispatcher for coroutines
+
 }
