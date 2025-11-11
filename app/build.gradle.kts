@@ -84,6 +84,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx) // ViewModelScope
     implementation(libs.androidx.lifecycle.runtime.ktx)   // Lifecycle support
     implementation(libs.kotlinx.coroutines.android)       // Main dispatcher for coroutines
+    implementation("com.prof18.rssparser:rssparser:6.0.4") // RSS Parser
+    implementation("io.coil-kt:coil:2.6.0") // Coil image loader
+
 
     // Supabase - using BOM for version management
     implementation(platform("io.github.jan-tennert.supabase:bom:${libs.versions.supabase.get()}"))

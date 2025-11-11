@@ -5,6 +5,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import android.widget.ImageView
+import coil.load
+import androidx.core.view.isVisible
 
 class FeedAdapter : RecyclerView.Adapter<FeedAdapter.VH>() {
 
@@ -26,6 +29,18 @@ class FeedAdapter : RecyclerView.Adapter<FeedAdapter.VH>() {
         val post = items[position]
         holder.caption.text = post.caption ?: "(no caption)"
         holder.meta.text = "by ${post.userId} • ${post.likesCount} likes • ${post.commentsCount} comments"
+
+        val firstImage = post.media.firstOrNull { it.type == "image" && it.url.isNotBlank() }?.url
+        val imageView = holder.itemView.findViewById<ImageView>(R.id.postImage)
+
+        if (firstImage != null) {
+            imageView.visibility = View.VISIBLE
+            imageView.load(firstImage) {
+                crossfade(true)
+            }
+        } else {
+            imageView.visibility = View.GONE
+        }
     }
 
     override fun getItemCount() = items.size
