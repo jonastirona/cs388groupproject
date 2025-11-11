@@ -1,5 +1,6 @@
 package com.example.modmycar
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -16,18 +17,27 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private val feedViewModel: FeedViewModel by viewModels()
+    private val authViewModel: AuthViewModel by viewModels()
     private lateinit var feedAdapter: FeedAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+        
+        // Check authentication state
+        checkAuthAndNavigate()
 
         // Setup RecyclerView
         val rv = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.feedRecycler)
         feedAdapter = FeedAdapter()
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = feedAdapter
+
+        // Setup Profile FAB
+        findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.profileFab).setOnClickListener {
+            startActivity(Intent(this, ProfileActivity::class.java))
+        }
 
         // Load more data when reaching the end
         val layoutManager = rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager
@@ -64,5 +74,38 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        // Observe auth state changes
+        observeAuthState()
+    }
+
+    private fun checkAuthAndNavigate() {
+        lifecycleScope.launch {
+            authViewModel.checkAuthState()
+            authViewModel.isAuthenticated.collect { isAuthenticated ->
+                if (isAuthenticated == false) {
+                    navigateToLogin()
+                }
+            }
+        }
+    }
+
+    private fun observeAuthState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                authViewModel.isAuthenticated.collect { isAuthenticated ->
+                    if (isAuthenticated == false) {
+                        navigateToLogin()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun navigateToLogin() {
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 }
