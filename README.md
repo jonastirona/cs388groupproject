@@ -36,14 +36,7 @@ The app's implementation is manageable as it will be a social-media like app. Co
 
 - [x] **User Authentication** – Allow users to sign up, log in, and manage their profile.
 
-- LOGIN:
-<img width="343" height="711" alt="Screenshot 2025-11-11 at 8 19 22 PM" src="https://github.com/user-attachments/assets/085735fa-8883-47c6-8a49-1f33646ba6a4" />
-
-- SIGNUP:
-<img width="348" height="769" alt="Screenshot 2025-11-11 at 8 19 41 PM" src="https://github.com/user-attachments/assets/43736bda-73c9-4de0-917d-fe945e63acf0" />
-
-- PROFILE:
-<img width="349" height="774" alt="Screenshot 2025-11-11 at 8 20 25 PM" src="https://github.com/user-attachments/assets/e18332cd-de45-4d6f-a0e0-89a2da23012e" />
+![Screen Recording 2025-11-11 at 8 28 08 PM](https://github.com/user-attachments/assets/fca943f8-a041-437a-8919-f2ce2e12fe52)
 
 - [ ] **Feed / Home Tab** – Users can view posts (photos, mod updates, or exhaust sound clips) shared by others.  
 - [ ] **Create Post** – Upload photos or record audio of their car, add a description, and post to the community feed.  
@@ -54,9 +47,7 @@ The app's implementation is manageable as it will be a social-media like app. Co
 - [ ] **Engagement Features** – Users can like, comment on, and share posts from the community feed.  
 - [ ] **Explore Tab** – View popular builds and nearby tuning or parts shops on a map.  
 - [ ] **Profile / Settings** – Edit personal info, view one’s posts, and log out.
-- [x] **New Articles Stream** - View relevant car-themed news articles.
-<img width="225" height="502" alt="Screenshot 2025-11-11 at 8 23 12 PM" src="https://github.com/user-attachments/assets/6c5d1f02-6039-4f13-b314-7d815e46af1b" />
-
+- [ ] **New Articles Stream** - View relevant car-themed news articles.
 #### **Optional Features**
 
 - [ ] **Performance Stats Tracking** – Record 0–60 mph and quarter-mile times using phone sensors (accelerometer + GPS).  
