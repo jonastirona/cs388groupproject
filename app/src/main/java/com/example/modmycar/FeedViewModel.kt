@@ -15,13 +15,28 @@ class FeedViewModel(
         }
 ) : ViewModel() {
 
-    private val rssRepo = RssFeedRepository()
+    /* private val rssRepo = RssFeedRepository() */ // kept for now; unused
+    private val redditRepository = RedditFeedRepository()
+    private var redditCursor: String? = null
 
     private suspend fun fetchCombinedPage(limit: Int, offset: Int): List<Post> {
         val supabase = runCatching { repository.getFeed(limit, offset) }.getOrElse { emptyList() }
-        val rss      = runCatching { rssRepo.getRssPosts(limit, offset) }.getOrElse { emptyList() }
 
-        return (supabase + rss)
+        val redditPage = runCatching {
+            redditRepository.getPosts(
+                query = RedditFeedRepository.DEFAULT_QUERY,
+                subreddits = RedditFeedRepository.DEFAULT_SUBS,
+                limit = limit,
+                after = redditCursor
+            )
+        }.getOrElse { RedditFeedRepository.Page(emptyList(), nextCursor = redditCursor) }
+
+        // advance cursor for next call
+        redditCursor = redditPage.nextCursor
+
+        val reddit = redditPage.items
+
+        return (supabase + reddit)
             .distinctBy { it.id }
             .sortedByDescending { it.createdAt }
     }
@@ -39,6 +54,7 @@ class FeedViewModel(
     fun refresh() {
         nextOffset = 0
         endReached = false
+        redditCursor = null
         _posts.value = emptyList()
         loadNextPage()
     }
