@@ -60,7 +60,11 @@ The app's implementation is manageable as it will be a social-media like app. Co
     - Created storage bucket to store images of mods completed by users on their cars
     <img width="263" height="155" alt="mod-schema" src="https://github.com/user-attachments/assets/fe3713ea-8318-48ad-bbf9-f9bbab26326c" />
     <img width="614" height="59" alt="car-mod-media" src="https://github.com/user-attachments/assets/b30814cc-3e2a-445e-9eb6-43097352b831" />
-- [ ] **Engagement Features** – Users can like, comment on, and share posts from the community feed.  
+- [ ] **Engagement Features** – Users can like, comment on, and share posts from the community feed.
+    **Update: Milestone 2**
+    - Working on adding likes and commenting to individual posts.
+    - Created supabase tables for likes and comments based on posts and userid's
+      <img width="856" height="610" alt="image" src="https://github.com/user-attachments/assets/4d882a3c-8bfc-4284-aa30-20675076309e" />
 - [ ] **Explore Tab** – View popular builds and nearby tuning or parts shops on a map.  
 - [ ] **Profile / Settings** – Edit personal info, view one’s posts, and log out.
 - [ ] **New Articles Stream** - View relevant car-themed news articles.
