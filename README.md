@@ -40,10 +40,20 @@ The app's implementation is manageable as it will be a social-media like app. Co
 
 - [ ] **Feed / Home Tab** – Users can view posts (photos, mod updates, or exhaust sound clips) shared by others.  
 - [ ] **Create Post** – Upload photos or record audio of their car, add a description, and post to the community feed.  
-- [ ] **My Garage** – Users can add their own cars with details (model, year, trim) and view a list of all their registered cars.  
-- [ ] **Car Detail Screen** – Display car information, photo carousel, and modification overview.  
-- [ ] **Mod Tree Visualization** – Hierarchical structure (e.g., *Engine → Intake → PRL Short Ram Intake*) to display and organize each car’s modifications.  
-- [ ] **Add Mod Functionality** – Add a new modification under the correct category with photos, cost, and optional audio (e.g., exhaust clip).  
+- [ ] **My Garage** – Users can add their own cars with details (model, year, trim) and view a list of all their registered cars.
+
+    ***Update: Milestone 2***
+    - Created supabase tables to store garage data
+    <img width="338" height="160" alt="car-schema" src="https://github.com/user-attachments/assets/ac811e8e-6f25-4944-b6a7-119e5edb8517" /> 
+- [ ] **Car Detail Screen** – Display car information, photo carousel, and modification overview.
+- [ ] **Mod Tree Visualization** – Hierarchical structure (e.g., *Engine → Intake → PRL Short Ram Intake*) to display and organize each car’s modifications.
+    **Update: Milestone 2**
+    - Created supabase table to store mod tree for each car (linked to car by car_id field)
+    <img width="263" height="155" alt="mod-schema" src="https://github.com/user-attachments/assets/fe3713ea-8318-48ad-bbf9-f9bbab26326c" />
+- [ ] **Add Mod Functionality** – Add a new modification under the correct category with photos, cost, and optional audio (e.g., exhaust clip).
+    **Update: Milestone 2**
+    - Created supabase table to mods completed by individual users on their car
+    <img width="263" height="155" alt="mod-schema" src="https://github.com/user-attachments/assets/fe3713ea-8318-48ad-bbf9-f9bbab26326c" />
 - [ ] **Engagement Features** – Users can like, comment on, and share posts from the community feed.  
 - [ ] **Explore Tab** – View popular builds and nearby tuning or parts shops on a map.  
 - [ ] **Profile / Settings** – Edit personal info, view one’s posts, and log out.
@@ -81,7 +91,7 @@ The app's implementation is manageable as it will be a social-media like app. Co
 - **My Garage Screen**  
   - Displays all cars added by the user with photos.  
   - “Add New Car” button to create a new entry.  
-  - Each car opens to **Car Detail**.  
+  - Each car opens to **Car Detail**.
 
 ### 3. Navigation
 
