@@ -64,7 +64,7 @@ The app's implementation is manageable as it will be a social-media like app. Co
     **Update: Milestone 2**
     - Working on adding likes and commenting to individual posts.
     - Created supabase tables for likes and comments based on posts and userid's
-      <img width="400" height="614" alt="likes and comments" src="https://github.com/user-attachments/assets/4d882a3c-8bfc-4284-aa30-20675076309e" />
+      <img width="500" height="614" alt="likes and comments" src="https://github.com/user-attachments/assets/4d882a3c-8bfc-4284-aa30-20675076309e" />
       
 - [ ] **Explore Tab** – View popular builds and nearby tuning or parts shops on a map.  
 - [ ] **Profile / Settings** – Edit personal info, view one’s posts, and log out.
