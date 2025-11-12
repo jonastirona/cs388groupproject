@@ -44,21 +44,21 @@ The app's implementation is manageable as it will be a social-media like app. Co
 
     ***Update: Milestone 2***
     - Created supabase tables to store garage data
-    <img width="338" height="160" alt="car-schema" src="https://github.com/user-attachments/assets/ac811e8e-6f25-4944-b6a7-119e5edb8517" />
     - Created storage bucket to store images of users cars
+    <img width="338" height="160" alt="car-schema" src="https://github.com/user-attachments/assets/ac811e8e-6f25-4944-b6a7-119e5edb8517" />
     <img width="653" height="46" alt="car-images" src="https://github.com/user-attachments/assets/4745d1a6-f84b-43de-b961-d90e0dd99975" />
 - [ ] **Car Detail Screen** – Display car information, photo carousel, and modification overview.
 - [ ] **Mod Tree Visualization** – Hierarchical structure (e.g., *Engine → Intake → PRL Short Ram Intake*) to display and organize each car’s modifications.
     **Update: Milestone 2**
     - Created supabase table to store mod tree for each car (linked to car by car_id field)
-    <img width="263" height="155" alt="mod-schema" src="https://github.com/user-attachments/assets/fe3713ea-8318-48ad-bbf9-f9bbab26326c" />
     - Created storage bucket to store images of mods available for cars
+    <img width="263" height="155" alt="mod-schema" src="https://github.com/user-attachments/assets/fe3713ea-8318-48ad-bbf9-f9bbab26326c" />
     <img width="656" height="49" alt="mod-images" src="https://github.com/user-attachments/assets/5cac5e5c-4e17-4222-a64b-3c1fd6f567b3" />
 - [ ] **Add Mod Functionality** – Add a new modification under the correct category with photos, cost, and optional audio (e.g., exhaust clip).
     **Update: Milestone 2**
     - Created supabase table to mods completed by individual users on their car
-    <img width="263" height="155" alt="mod-schema" src="https://github.com/user-attachments/assets/fe3713ea-8318-48ad-bbf9-f9bbab26326c" />
     - Created storage bucket to store images of mods completed by users on their cars
+    <img width="263" height="155" alt="mod-schema" src="https://github.com/user-attachments/assets/fe3713ea-8318-48ad-bbf9-f9bbab26326c" />
     <img width="614" height="59" alt="car-mod-media" src="https://github.com/user-attachments/assets/b30814cc-3e2a-445e-9eb6-43097352b831" />
 - [ ] **Engagement Features** – Users can like, comment on, and share posts from the community feed.  
 - [ ] **Explore Tab** – View popular builds and nearby tuning or parts shops on a map.  
