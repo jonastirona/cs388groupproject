@@ -16,15 +16,20 @@ class ProfileActivity : AppCompatActivity() {
 
     private val authViewModel: AuthViewModel by viewModels()
     private val userViewModel: UserViewModel by viewModels()
+    private val followViewModel: FollowViewModel by viewModels()
 
     private lateinit var emailEditText: TextInputEditText
     private lateinit var usernameEditText: TextInputEditText
     private lateinit var displayNameEditText: TextInputEditText
     private lateinit var saveButton: MaterialButton
+    private lateinit var searchButton: MaterialButton
+    private lateinit var friendsButton: MaterialButton
     private lateinit var logoutButton: MaterialButton
     private lateinit var homeButton: MaterialButton
     private lateinit var errorText: android.widget.TextView
     private lateinit var progressBar: android.widget.ProgressBar
+    private lateinit var followersCountText: android.widget.TextView
+    private lateinit var followingCountText: android.widget.TextView
 
     private var currentUserId: String? = null
 
@@ -36,10 +41,14 @@ class ProfileActivity : AppCompatActivity() {
         usernameEditText = findViewById(R.id.usernameEditText)
         displayNameEditText = findViewById(R.id.displayNameEditText)
         saveButton = findViewById(R.id.saveButton)
+        searchButton = findViewById(R.id.searchButton)
+        friendsButton = findViewById(R.id.friendsButton)
         logoutButton = findViewById(R.id.logoutButton)
         homeButton = findViewById(R.id.homeButton)
         errorText = findViewById(R.id.errorText)
         progressBar = findViewById(R.id.progressBar)
+        followersCountText = findViewById(R.id.followersCountText)
+        followingCountText = findViewById(R.id.followingCountText)
 
         saveButton.setOnClickListener {
             currentUserId?.let { userId ->
@@ -60,6 +69,14 @@ class ProfileActivity : AppCompatActivity() {
             authViewModel.signOut()
         }
 
+        searchButton.setOnClickListener {
+            navigateToSearch()
+        }
+
+        friendsButton.setOnClickListener {
+            navigateToFriendsList()
+        }
+
         homeButton.setOnClickListener {
             navigateToHome()
         }
@@ -76,6 +93,9 @@ class ProfileActivity : AppCompatActivity() {
                         currentUserId = it.id
                         emailEditText.setText(it.email)
                         userViewModel.loadProfile(it.id)
+                        // Load follower/following counts
+                        followViewModel.loadFollowerCount(it.id)
+                        followViewModel.loadFollowingCount(it.id)
                     } ?: run {
                         // Not authenticated, go to login
                         navigateToLogin()
@@ -159,6 +179,44 @@ class ProfileActivity : AppCompatActivity() {
             }
         }
 
+        // Observe follower counts
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                followViewModel.followerCounts.collect { counts ->
+                    currentUserId?.let { userId ->
+                        counts[userId]?.let { count ->
+                            followersCountText.text = count.toString()
+                        }
+                    }
+                }
+            }
+        }
+
+        // Observe following counts
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                followViewModel.followingCounts.collect { counts ->
+                    currentUserId?.let { userId ->
+                        counts[userId]?.let { count ->
+                            followingCountText.text = count.toString()
+                        }
+                    }
+                }
+            }
+        }
+
+        // Observe follow errors
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                followViewModel.error.collect { error ->
+                    error?.let {
+                        showError(it)
+                        followViewModel.clearError()
+                    }
+                }
+            }
+        }
+
         // Check auth state on start
         authViewModel.checkAuthState()
     }
@@ -170,6 +228,16 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun showProfileSavedToast() {
         Toast.makeText(this, "Profile saved", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun navigateToSearch() {
+        val intent = Intent(this, SearchActivity::class.java)
+        startActivity(intent)
+    }
+
+    private fun navigateToFriendsList() {
+        val intent = Intent(this, FriendsListActivity::class.java)
+        startActivity(intent)
     }
 
     private fun navigateToHome() {

@@ -10,6 +10,7 @@ interface UserRepository {
     suspend fun createProfile(profile: UserProfile): AuthResult<UserProfile>
     suspend fun updateProfile(userId: String, username: String?, displayName: String?): AuthResult<UserProfile>
     suspend fun deleteProfile(userId: String): AuthResult<Unit>
+    suspend fun searchUsers(query: String): List<UserProfile>
 }
 
 class SupabaseUserRepository(
@@ -18,6 +19,7 @@ class SupabaseUserRepository(
 
     override suspend fun getProfile(userId: String): AuthResult<UserProfile?> {
         return try {
+
             val profile = supabaseClient.from("profiles")
                 .select(columns = Columns.ALL) {
                     filter {
@@ -26,6 +28,7 @@ class SupabaseUserRepository(
                 }.decodeSingleOrNull<UserProfile>()
             AuthResult.Success(profile)
         } catch (e: Exception) {
+
             AuthResult.Error("Failed to get profile: ${e.message}", e)
         }
     }
@@ -89,6 +92,46 @@ class SupabaseUserRepository(
             AuthResult.Success(Unit)
         } catch (e: Exception) {
             AuthResult.Error("Failed to delete profile: ${e.message}", e)
+        }
+    }
+
+    override suspend fun searchUsers(query: String): List<UserProfile> {
+        return try {
+            if (query.isBlank()) {
+                return emptyList()
+            }
+            // Search by username or display_name
+            // Using ilike for case-insensitive search (PostgREST standard)
+            supabaseClient.from("profiles")
+                .select(columns = Columns.ALL) {
+                    filter {
+                        or {
+                            ilike("username", "%$query%")
+                            ilike("display_name", "%$query%")
+                        }
+                    }
+                    limit(50) // Limit results to 50
+                }
+                .decodeList<UserProfile>()
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error searching users: ${e.message}", e)
+            // If ilike doesn't work, fall back to fetching all and filtering client-side
+            // This is less efficient but will work as a fallback
+            try {
+                val allProfiles = supabaseClient.from("profiles")
+                    .select(columns = Columns.ALL) {
+                        limit(100)
+                    }
+                    .decodeList<UserProfile>()
+                val lowerQuery = query.lowercase()
+                allProfiles.filter { profile ->
+                    profile.username?.lowercase()?.contains(lowerQuery) == true ||
+                    profile.display_name?.lowercase()?.contains(lowerQuery) == true
+                }
+            } catch (fallbackError: Exception) {
+                android.util.Log.e("UserRepository", "Fallback search also failed", fallbackError)
+                emptyList()
+            }
         }
     }
 }
