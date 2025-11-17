@@ -92,6 +92,7 @@ dependencies {
     implementation(platform("io.github.jan-tennert.supabase:bom:${libs.versions.supabase.get()}"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
     implementation("io.ktor:ktor-client-cio:${libs.versions.ktor.get()}")
 
 }
