@@ -78,11 +78,8 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
-    testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     implementation(libs.kotlinx.serialization.json) // Serialization library
     implementation(libs.androidx.lifecycle.viewmodel.ktx) // ViewModelScope
     implementation(libs.androidx.lifecycle.runtime.ktx)   // Lifecycle support
