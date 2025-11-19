@@ -42,11 +42,13 @@ class NewsFragment : Fragment(R.layout.fragment_news) {
         recyclerView.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                if (dy <= 0) return
                 val layoutManager = recyclerView.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager ?: return
                 val total = adapter.itemCount
+                if (total == 0) return
+
                 val lastVisible = layoutManager.findLastVisibleItemPosition()
-                if (lastVisible >= total - 4) {
+                val threshold = 3
+                if (lastVisible >= total - threshold) {
                     newsViewModel.loadNextPage()
                 }
             }

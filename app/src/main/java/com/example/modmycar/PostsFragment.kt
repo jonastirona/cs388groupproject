@@ -39,10 +39,12 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                if (dy <= 0) return
                 val total = adapter.itemCount
+                if (total == 0) return
+
                 val lastVisible = layoutManager.findLastVisibleItemPosition()
-                if (lastVisible >= total - 4) {
+                val threshold = 3
+                if (lastVisible >= total - threshold) {
                     feedViewModel.loadNextPage()
                 }
             }
