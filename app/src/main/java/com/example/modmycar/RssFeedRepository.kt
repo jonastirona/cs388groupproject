@@ -4,6 +4,8 @@ import com.prof18.rssparser.RssParser
 import com.prof18.rssparser.model.RssItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jsoup.Jsoup
+import java.net.URI
 import java.util.UUID
 import java.util.regex.Pattern
 
@@ -23,10 +25,10 @@ class RssFeedRepository(
     )
 
     /**
-     * Returns a list of Posts mapped from RSS items (merged across feeds),
+     * Returns a list of news articles mapped from RSS items (merged across feeds),
      * sorted by pubDate descending, and sliced by (offset, limit).
      */
-    suspend fun getRssPosts(limit: Int = 20, offset: Int = 0): List<Post> = withContext(Dispatchers.IO) {
+    suspend fun getArticles(limit: Int = 20, offset: Int = 0): List<NewsArticleSummary> = withContext(Dispatchers.IO) {
         val allItems = mutableListOf<RssItem>()
 
         // Fetch each feed sequentially (keep it simple first).
@@ -40,8 +42,8 @@ class RssFeedRepository(
 
         val mapped = allItems
             .asSequence()
-            .map { it.toPost() }
-            .sortedByDescending { it.createdAt }
+            .map { it.toArticle() }
+            .sortedByDescending { it.publishedAt ?: "" }
             .toList()
 
         val from = offset.coerceAtLeast(0).coerceAtMost(mapped.size)
@@ -51,31 +53,28 @@ class RssFeedRepository(
 
     // --- Helpers ---
 
-    private fun RssItem.toPost(): Post {
+    private fun RssItem.toArticle(): NewsArticleSummary {
         val imageUrl = imageFrom(this)
+        val summaryText = description?.let { Jsoup.parse(it).text() }
+            ?: content?.let { Jsoup.parse(it).text() }
 
-        return Post(
-            id = "rss-" + (link ?: UUID.randomUUID().toString()),
-            userId = "rss",                  // synthetic author
-            carId = null,
-            caption = title ?: description ?: "RSS item",
-            media = imageUrl?.let {
-                listOf(
-                    MediaItem(
-                        type = "image",
-                        url = it,
-                        width = null,
-                        height = null
-                    )
+        val sourceName = linkHost()
+
+        return NewsArticleSummary(
+            id = "rss-" + (link ?: guid ?: UUID.randomUUID().toString()),
+            title = title ?: summaryText ?: "RSS item",
+            summary = summaryText,
+            imageUrl = imageUrl,
+            source = sourceName,
+            publishedAt = pubDate,
+            link = link ?: ""
                 )
-            } ?: emptyList(),
-            likesCount = 0,
-            commentsCount = 0,
-            visibility = "public",
-            status = "active",
-            createdAt = (pubDate ?: "1970-01-01T00:00:00Z"),
-            updatedAt = null
-        )
+    }
+
+    private fun RssItem.linkHost(): String? = try {
+        link?.let { URI(it).host }
+    } catch (e: Exception) {
+        null
     }
 
     // Try multiple sources: <enclosure>, <media:content>, item.image, then HTML fallbacks
@@ -97,7 +96,12 @@ class RssFeedRepository(
             """<img[^>]+(?:src|data-src)\s*=\s*['"]([^'"]+)['"]""",
             Pattern.CASE_INSENSITIVE
         )
-        srcPattern.matcher(html).apply { if (find()) return group(1) }
+        srcPattern.matcher(html).apply {
+            if (find()) {
+                val match = group(1)
+                if (!match.isNullOrBlank()) return match
+            }
+        }
 
         // srcset (take the first URL)
         val srcsetPattern = Pattern.compile(
@@ -106,9 +110,10 @@ class RssFeedRepository(
         )
         srcsetPattern.matcher(html).apply {
             if (find()) {
-                val firstUrl = group(1)
-                    .split(",")
-                    .firstOrNull()
+                val srcset = group(1)
+                val firstUrl = srcset
+                    ?.split(",")
+                    ?.firstOrNull()
                     ?.trim()
                     ?.split(" ")
                     ?.firstOrNull()
@@ -123,7 +128,10 @@ class RssFeedRepository(
         )
         styleUrlPattern.matcher(html).apply {
             if (find()) {
-                return group(1).trim().trim('"', '\'')
+                val value = group(1)
+                if (!value.isNullOrBlank()) {
+                    return value.trim().trim('"', '\'')
+                }
             }
         }
 

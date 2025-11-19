@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ModMyCar</string>
+    <string name="create_post">Create Post</string>
 </resources>
