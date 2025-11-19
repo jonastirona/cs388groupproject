@@ -17,11 +17,12 @@ class RssFeedRepository(
     private val parser: RssParser = RssParser()
 ) {
 
-    // Add/remove feeds freely. Keep 2–4 to start (prof suggestion: small, focused).
+    // Keep this list limited to feeds that allow server-side fetches (no paywalls / bot blockers).
     private val feeds = listOf(
         "https://www.speedhunters.com/feed/",
-        "https://www.autoblog.com/rss.xml",
-        "https://www.thedrive.com/feeds/rss" // replace any that 4xx with a known-good feed
+        "https://www.autoweek.com/rss/all.xml",
+        "https://www.carscoops.com/feed/",
+        "https://www.autocar.co.uk/rss"
     )
 
     /**

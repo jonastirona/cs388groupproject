@@ -37,6 +37,11 @@ android {
             "SUPABASE_ANON_KEY",
             "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\""
         )
+        buildConfigField(
+            "String",
+            "NEWS_API_KEY",
+            "\"${localProperties.getProperty("NEWS_API_KEY", "")}\""
+        )
     }
 
     buildTypes {
