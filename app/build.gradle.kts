@@ -86,6 +86,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)       // Main dispatcher for coroutines
     implementation("com.prof18.rssparser:rssparser:6.0.4") // RSS Parser
     implementation("io.coil-kt:coil:2.6.0") // Coil image loader
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
+    implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.fragment:fragment-ktx:1.8.2")
+    implementation("org.jsoup:jsoup:1.17.2")
 
 
     // Supabase - using BOM for version management

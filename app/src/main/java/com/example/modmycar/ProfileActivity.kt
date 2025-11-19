@@ -40,6 +40,7 @@ class ProfileActivity : AppCompatActivity() {
         homeButton = findViewById(R.id.homeButton)
         errorText = findViewById(R.id.errorText)
         progressBar = findViewById(R.id.progressBar)
+        val myPostsButton: MaterialButton = findViewById(R.id.myPostsButton)
 
         saveButton.setOnClickListener {
             currentUserId?.let { userId ->
@@ -62,6 +63,10 @@ class ProfileActivity : AppCompatActivity() {
 
         homeButton.setOnClickListener {
             navigateToHome()
+        }
+
+        myPostsButton.setOnClickListener {
+            startActivity(Intent(this, MyPostsActivity::class.java))
         }
 
         observeViewModels()

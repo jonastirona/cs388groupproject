@@ -9,7 +9,9 @@ import android.widget.ImageView
 import coil.load
 import androidx.core.view.isVisible
 
-class FeedAdapter : RecyclerView.Adapter<FeedAdapter.VH>() {
+class FeedAdapter(
+    private val onPostClick: (Post) -> Unit
+) : RecyclerView.Adapter<FeedAdapter.VH>() {
 
     private val items = mutableListOf<Post>()
 
@@ -40,6 +42,10 @@ class FeedAdapter : RecyclerView.Adapter<FeedAdapter.VH>() {
             }
         } else {
             imageView.visibility = View.GONE
+        }
+
+        holder.itemView.setOnClickListener {
+            onPostClick(post)
         }
     }
 

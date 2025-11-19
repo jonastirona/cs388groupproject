@@ -6,81 +6,85 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-
-import android.util.Log
 import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
-import kotlinx.coroutines.launch
-import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import androidx.lifecycle.Lifecycle
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import androidx.viewpager2.widget.ViewPager2
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    private val feedViewModel: FeedViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
-    private lateinit var feedAdapter: FeedAdapter
+    private lateinit var pagerAdapter: MainPagerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        // 1) Auth gate
         checkAuthAndNavigate()
+        setupPager()
+        setupFab()
+        setupBottomNav()
+        observeAuthState()
+        setupInsets()
+    }
 
-        // 2) Recycler setup
-        val rv = findViewById<RecyclerView>(R.id.feedRecycler)
-        feedAdapter = FeedAdapter()
-        val layoutManager = LinearLayoutManager(this)
+    private fun setupPager() {
+        val viewPager = findViewById<ViewPager2>(R.id.homeViewPager)
+        val tabLayout = findViewById<TabLayout>(R.id.homeTabs)
+        pagerAdapter = MainPagerAdapter(this)
+        viewPager.adapter = pagerAdapter
 
-        rv.layoutManager = layoutManager
-        rv.adapter = feedAdapter
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = if (position == 0) "Posts" else "News"
+        }.attach()
+    }
 
-        // 3) Profile FAB
-        findViewById<FloatingActionButton>(R.id.profileFab).setOnClickListener {
-            startActivity(Intent(this, ProfileActivity::class.java))
+    private fun setupFab() {
+        findViewById<FloatingActionButton>(R.id.createPostFab).setOnClickListener {
+            startActivity(Intent(this, CreatePostActivity::class.java))
         }
+    }
 
-        // 4) Infinite scroll
-        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                if (dy <= 0) return // only when scrolling down
-
-                val total = feedAdapter.itemCount
-                val lastVisible = layoutManager.findLastVisibleItemPosition()
-                val threshold = 5
-                if (lastVisible >= total - threshold) {
-                    feedViewModel.loadNextPage()
+    private fun setupBottomNav() {
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
+        bottomNav.selectedItemId = R.id.nav_home
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> true
+                R.id.nav_garage -> {
+                    startActivity(Intent(this, MyGarageActivity::class.java))
+                    false
+                }
+                R.id.nav_explore -> {
+                    startActivity(Intent(this, ExploreActivity::class.java))
+                    false
+                }
+                R.id.nav_community -> {
+                    startActivity(Intent(this, CommunityActivity::class.java))
+                    false
+                }
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    false
+                }
+                else -> false
                 }
             }
-        })
-
-        // 5) Initial load
-        feedViewModel.refresh()
-
-        // 6) Collect posts and render
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                feedViewModel.posts.collect { posts ->
-                    feedAdapter.setItems(posts)
-                    Log.d("FeedVM", "Rendered ${posts.size} posts")
-                }
-            }
         }
 
-        // 7) Insets
+    private fun setupInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
-        // 8) Observe auth changes during session
-        observeAuthState()
     }
 
     private fun checkAuthAndNavigate() {

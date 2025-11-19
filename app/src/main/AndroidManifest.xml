@@ -34,6 +34,51 @@
             android:name=".ProfileActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".CreatePostActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PostDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MyGarageActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CarDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AddCarActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ModTreeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AddModActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ExploreActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PopularBuildsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".NearbyShopsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CommunityActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FriendsListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FriendRequestsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MyPostsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".NewsDetailActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
