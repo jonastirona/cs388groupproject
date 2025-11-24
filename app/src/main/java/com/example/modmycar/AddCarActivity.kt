@@ -7,27 +7,26 @@ import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.launch
 
 class AddCarActivity : AppCompatActivity() {
 
     private var selectedMake: String? = null
     private var selectedModel: String? = null
     private var selectedColor: String = "#CCCCCC"
-
-    // TODO: Replace with actual data from CarRepository
-    private val placeholderMakes = listOf("Honda", "Toyota", "Ford", "Chevrolet", "BMW", "Mercedes-Benz")
-    private val makeToModels = mapOf(
-        "Honda" to listOf("Civic", "Accord", "CR-V", "Pilot"),
-        "Toyota" to listOf("Camry", "Corolla", "RAV4", "Supra"),
-        "Ford" to listOf("Mustang", "F-150", "Explorer", "Focus"),
-        "Chevrolet" to listOf("Camaro", "Silverado", "Tahoe", "Corvette"),
-        "BMW" to listOf("3 Series", "5 Series", "X5", "M3"),
-        "Mercedes-Benz" to listOf("C-Class", "E-Class", "S-Class", "GLE")
-    )
+    
+    private val carRepository: CarRepository = SupabaseCarRepository()
+    private val garageCarRepository: GarageCarRepository = SupabaseGarageCarRepository()
+    private val authRepository: AuthRepository = SupabaseAuthRepository()
+    
+    private var availableMakes: List<String> = emptyList()
+    private var makeToModels: Map<String, List<String>> = emptyMap()
+    private var currentModels: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,27 +45,41 @@ class AddCarActivity : AppCompatActivity() {
         val colorHexTextView = findViewById<android.widget.TextView>(R.id.colorHexTextView)
         val saveCarButton = findViewById<MaterialButton>(R.id.saveCarButton)
 
+        // Configure AutoCompleteTextView to show dropdown on click
+        makeAutoComplete.threshold = 1
+        makeAutoComplete.setOnClickListener {
+            if (makeAutoComplete.adapter != null && makeAutoComplete.adapter.count > 0) {
+                makeAutoComplete.showDropDown()
+            }
+        }
+        
+        modelAutoComplete.threshold = 1
+        modelAutoComplete.setOnClickListener {
+            if (modelAutoComplete.adapter != null && modelAutoComplete.adapter.count > 0) {
+                modelAutoComplete.showDropDown()
+            }
+        }
+
+        // Load makes and models from repository
+        loadMakesAndModels()
+
         // Setup Make dropdown
-        val makeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, placeholderMakes)
-        makeAutoComplete.setAdapter(makeAdapter)
         makeAutoComplete.setOnItemClickListener { _, _, position, _ ->
-            selectedMake = placeholderMakes[position]
-            selectedModel = null
-            
-            // Enable and populate model dropdown
-            modelInputLayout.isEnabled = true
-            modelAutoComplete.isEnabled = true
-            val models = makeToModels[selectedMake] ?: emptyList()
-            val modelAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, models)
-            modelAutoComplete.setAdapter(modelAdapter)
-            modelAutoComplete.setText("", false)
+            if (position < availableMakes.size) {
+                selectedMake = availableMakes[position]
+                selectedModel = null
+                
+                // Enable and populate model dropdown
+                modelInputLayout.isEnabled = true
+                modelAutoComplete.isEnabled = true
+                loadModelsForMake(selectedMake!!)
+            }
         }
 
         // Setup Model dropdown
         modelAutoComplete.setOnItemClickListener { _, _, position, _ ->
-            val models = makeToModels[selectedMake] ?: emptyList()
-            if (position < models.size) {
-                selectedModel = models[position]
+            if (position < currentModels.size) {
+                selectedModel = currentModels[position]
             }
         }
 
@@ -100,9 +113,137 @@ class AddCarActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
-            // TODO: Implement save to Supabase
-            Toast.makeText(this, "Car saved (placeholder): $selectedMake $selectedModel $year", Toast.LENGTH_SHORT).show()
-            finish()
+            saveCar(selectedMake!!, selectedModel!!, year)
+        }
+    }
+
+    private fun loadMakesAndModels() {
+        lifecycleScope.launch {
+            when (val result = carRepository.getMakesWithModels()) {
+                is AuthResult.Success -> {
+                    makeToModels = result.data
+                    availableMakes = result.data.keys.sorted()
+                    
+                    if (availableMakes.isEmpty()) {
+                        Toast.makeText(
+                            this@AddCarActivity,
+                            "No makes found in database",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        return@launch
+                    }
+                    
+                    val makeAdapter = ArrayAdapter(
+                        this@AddCarActivity,
+                        android.R.layout.simple_dropdown_item_1line,
+                        availableMakes
+                    )
+                    val makeAutoComplete = findViewById<AutoCompleteTextView>(R.id.makeAutoComplete)
+                    makeAutoComplete.setAdapter(makeAdapter)
+                }
+                is AuthResult.Error -> {
+                    Toast.makeText(
+                        this@AddCarActivity,
+                        "Failed to load makes: ${result.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+    
+    private fun loadModelsForMake(make: String) {
+        lifecycleScope.launch {
+            when (val result = carRepository.getModelsByMake(make)) {
+                is AuthResult.Success -> {
+                    currentModels = result.data
+                    
+                    if (currentModels.isEmpty()) {
+                        Toast.makeText(
+                            this@AddCarActivity,
+                            "No models found for $make",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@launch
+                    }
+                    
+                    val modelAdapter = ArrayAdapter(
+                        this@AddCarActivity,
+                        android.R.layout.simple_dropdown_item_1line,
+                        currentModels
+                    )
+                    val modelAutoComplete = findViewById<AutoCompleteTextView>(R.id.modelAutoComplete)
+                    modelAutoComplete.setAdapter(modelAdapter)
+                    modelAutoComplete.setText("", false)
+                }
+                is AuthResult.Error -> {
+                    Toast.makeText(
+                        this@AddCarActivity,
+                        "Failed to load models: ${result.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+    
+    private fun saveCar(make: String, model: String, year: Int) {
+        lifecycleScope.launch {
+            // Get current user
+            val userResult = authRepository.getCurrentSession()
+            val userId = when (userResult) {
+                is AuthResult.Success -> userResult.data?.id
+                is AuthResult.Error -> null
+            }
+            
+            if (userId == null) {
+                Toast.makeText(this@AddCarActivity, "Please sign in to save a car", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            
+            // Find car_id by matching make and model
+            val carsResult = carRepository.getAllCars()
+            val carId = when (carsResult) {
+                is AuthResult.Success -> {
+                    carsResult.data.firstOrNull { it.make == make && it.model == model }?.id
+                }
+                is AuthResult.Error -> null
+            }
+            
+            if (carId == null) {
+                Toast.makeText(
+                    this@AddCarActivity,
+                    "Car not found: $make $model",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@launch
+            }
+            
+            // Create garage car
+            val garageCarCreate = GarageCarCreate(
+                userId = userId,
+                carId = carId,
+                color = selectedColor,
+                year = year
+            )
+            
+            when (val result = garageCarRepository.createGarageCar(garageCarCreate)) {
+                is AuthResult.Success -> {
+                    Toast.makeText(
+                        this@AddCarActivity,
+                        "Car saved successfully!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                }
+                is AuthResult.Error -> {
+                    Toast.makeText(
+                        this@AddCarActivity,
+                        "Failed to save car: ${result.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
         }
     }
 
