@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class NewsViewModel(
-    private val repository: RssFeedRepository = RssFeedRepository()
+    private val repository: NewsApiRepository = NewsApiRepository()
 ) : ViewModel() {
 
     private val _articles = MutableStateFlow<List<NewsArticleSummary>>(emptyList())
