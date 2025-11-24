@@ -2,6 +2,7 @@ package com.example.modmycar
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -84,6 +85,9 @@ class MyGarageActivity : AppCompatActivity() {
                             val displayItems = garageCars.mapNotNull { garageCar ->
                                 val car = carsMap[garageCar.carId]
                                 if (car != null) {
+                                    // Use suspend version for better performance
+                                    val imageUrl = CarImageService.getCarImageUrlSuspend(car.make)
+                                    Log.d("MyGarageActivity", "Car: ${car.make} ${car.model}, Image URL: $imageUrl")
                                     GarageCarDisplayItem(
                                         id = garageCar.id,
                                         carId = garageCar.carId,
@@ -91,12 +95,15 @@ class MyGarageActivity : AppCompatActivity() {
                                         model = car.model,
                                         year = garageCar.year ?: 0,
                                         color = garageCar.color,
-                                        imageUrl = null
+                                        imageUrl = imageUrl
                                     )
                                 } else {
+                                    Log.w("MyGarageActivity", "Car not found for garageCar.carId: ${garageCar.carId}")
                                     null
                                 }
                             }
+                            
+                            Log.d("MyGarageActivity", "Loaded ${displayItems.size} garage cars")
                             
                             garageCarAdapter = GarageCarAdapter(displayItems) { car ->
                                 val intent = Intent(this@MyGarageActivity, CarDetailActivity::class.java).apply {

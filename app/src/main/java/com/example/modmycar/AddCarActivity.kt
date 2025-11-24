@@ -229,6 +229,8 @@ class AddCarActivity : AppCompatActivity() {
             
             when (val result = garageCarRepository.createGarageCar(garageCarCreate)) {
                 is AuthResult.Success -> {
+                    // Clear image cache to ensure fresh images are loaded when returning to garage
+                    CarImageService.clearCache()
                     Toast.makeText(
                         this@AddCarActivity,
                         "Car saved successfully!",

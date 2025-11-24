@@ -1,6 +1,7 @@
 package com.example.modmycar
 
 import android.graphics.Color
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -50,13 +51,31 @@ class GarageCarAdapter(
             holder.colorBarView.setBackgroundColor(Color.parseColor("#CCCCCC"))
         }
         
-        // Load car image (placeholder for now)
+        // Load car image with proper caching
         if (car.imageUrl != null) {
+            Log.d("GarageCarAdapter", "Loading image for ${car.make} ${car.model} from URL: ${car.imageUrl}")
             holder.carPhotoImageView.load(car.imageUrl) {
                 placeholder(android.R.drawable.ic_menu_gallery)
                 error(android.R.drawable.ic_menu_gallery)
+                // Enable memory and disk caching
+                memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                // Use a stable key based on make to ensure consistent caching
+                memoryCacheKey(car.make)
+                listener(
+                    onStart = { request ->
+                        Log.d("GarageCarAdapter", "Image load started for ${car.make}: ${request.data}")
+                    },
+                    onSuccess = { _, result ->
+                        Log.d("GarageCarAdapter", "Image loaded successfully for ${car.make} ${car.model}")
+                    },
+                    onError = { _, result ->
+                        Log.e("GarageCarAdapter", "Image load failed for ${car.make} ${car.model}: ${result.throwable.message}", result.throwable)
+                    }
+                )
             }
         } else {
+            Log.w("GarageCarAdapter", "No image URL for ${car.make} ${car.model} - using placeholder")
             holder.carPhotoImageView.setImageResource(android.R.drawable.ic_menu_gallery)
         }
         

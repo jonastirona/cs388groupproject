@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -12,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+import coil.load
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -43,9 +45,38 @@ class CarDetailActivity : AppCompatActivity() {
         currentYear = intent.getIntExtra("CAR_YEAR", 0)
         currentColor = intent.getStringExtra("CAR_COLOR") ?: "#FF0000"
 
-        // Set car photo header (placeholder)
+        // Set car photo header
         val carPhotoHeader = findViewById<ImageView>(R.id.carPhotoHeaderImageView)
-        carPhotoHeader.setImageResource(android.R.drawable.ic_menu_gallery)
+        lifecycleScope.launch {
+            val carImageUrl = CarImageService.getCarImageUrlSuspend(carMake)
+            Log.d("CarDetailActivity", "Car make: '$carMake', Image URL: $carImageUrl")
+            if (carImageUrl != null) {
+                Log.d("CarDetailActivity", "Loading image from URL: $carImageUrl")
+                carPhotoHeader.load(carImageUrl) {
+                    placeholder(android.R.drawable.ic_menu_gallery)
+                    error(android.R.drawable.ic_menu_gallery)
+                    // Enable memory and disk caching
+                    memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                    diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                    // Use a stable key based on make to ensure consistent caching
+                    memoryCacheKey(carMake)
+                    listener(
+                        onStart = { request ->
+                            Log.d("CarDetailActivity", "Image load started: ${request.data}")
+                        },
+                        onSuccess = { _, result ->
+                            Log.d("CarDetailActivity", "Image loaded successfully for $carMake")
+                        },
+                        onError = { _, result ->
+                            Log.e("CarDetailActivity", "Image load failed for $carMake: ${result.throwable.message}", result.throwable)
+                        }
+                    )
+                }
+            } else {
+                Log.w("CarDetailActivity", "No image URL for make '$carMake' - using placeholder")
+                carPhotoHeader.setImageResource(android.R.drawable.ic_menu_gallery)
+            }
+        }
 
         // Set car model and year
         val carModelYearTextView = findViewById<TextView>(R.id.carModelYearTextView)
