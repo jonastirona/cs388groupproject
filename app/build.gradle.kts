@@ -37,6 +37,11 @@ android {
             "SUPABASE_ANON_KEY",
             "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\""
         )
+        buildConfigField(
+            "String",
+            "NEWS_API_KEY",
+            "\"${localProperties.getProperty("NEWS_API_KEY", "")}\""
+        )
     }
 
     buildTypes {
@@ -84,7 +89,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx) // ViewModelScope
     implementation(libs.androidx.lifecycle.runtime.ktx)   // Lifecycle support
     implementation(libs.kotlinx.coroutines.android)       // Main dispatcher for coroutines
-    implementation("com.prof18.rssparser:rssparser:6.0.4") // RSS Parser
     implementation("io.coil-kt:coil:2.6.0") // Coil image loader
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
@@ -99,5 +103,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:storage-kt")
     implementation("io.ktor:ktor-client-cio:${libs.versions.ktor.get()}")
+    implementation("io.ktor:ktor-client-content-negotiation:${libs.versions.ktor.get()}")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:${libs.versions.ktor.get()}")
 
 }
