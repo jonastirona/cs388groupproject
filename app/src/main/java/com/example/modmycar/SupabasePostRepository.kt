@@ -44,7 +44,7 @@ class SupabasePostRepository(
             filter { eq("id", postId) }
             single()
         }
-        return res.decodeSingle<Post>()
+        return res.decodeAs<Post>()
     }
 
     override suspend fun updatePost(postId: String, post: Post): Post {

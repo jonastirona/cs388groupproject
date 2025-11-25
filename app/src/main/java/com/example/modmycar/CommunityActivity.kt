@@ -17,8 +17,8 @@ class CommunityActivity : AppCompatActivity() {
             startActivity(Intent(this, FriendsListActivity::class.java))
         }
 
-        findViewById<android.view.View>(R.id.communityRequests).setOnClickListener {
-            startActivity(Intent(this, FriendRequestsActivity::class.java))
+        findViewById<android.view.View>(R.id.communityFindFriends).setOnClickListener {
+            startActivity(Intent(this, FriendSearchActivity::class.java))
         }
     }
 }

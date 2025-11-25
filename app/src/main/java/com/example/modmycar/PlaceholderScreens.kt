@@ -8,11 +8,6 @@ class PopularBuildsActivity : SimplePlaceholderActivity() {
 
 // NearbyShopsActivity has been moved to its own file with full implementation
 
-class FriendsListActivity : SimplePlaceholderActivity() {
-    override val screenTitle: String = "Friends List"
-    override val descriptionText: String =
-        "View and manage your friends in the ModMyCar community."
-}
 
 class FriendRequestsActivity : SimplePlaceholderActivity() {
     override val screenTitle: String = "Friend Requests"

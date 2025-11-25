@@ -78,6 +78,9 @@
             android:name=".FriendsListActivity"
             android:exported="false" />
         <activity
+            android:name=".FriendSearchActivity"
+            android:exported="false" />
+        <activity
             android:name=".FriendRequestsActivity"
             android:exported="false" />
         <activity
