@@ -12,6 +12,7 @@ import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 
@@ -112,19 +113,30 @@ class FeedAdapter(
                 }
 
                 val isLiked = likeRepository.isLiked(post.id, userId)
+                val optimistic = if (isLiked) {
+                    val newCount = (post.likesCount - 1).coerceAtLeast(0)
+                    post.copy(likesCount = newCount)
+                } else {
+                    post.copy(likesCount = post.likesCount + 1)
+                }
+                items[position] = optimistic
+                holder.likeCount.text = optimistic.likesCount.toString()
+
                 if (isLiked) {
                     likeRepository.unlikePost(post.id, userId)
                     holder.likeButton.text = "Like"
-                    val newCount = (post.likesCount - 1).coerceAtLeast(0)
-                    holder.likeCount.text = newCount.toString()
-                    items[position] = post.copy(likesCount = newCount)
                 } else {
                     likeRepository.likePost(post.id, userId)
                     holder.likeButton.text = "Unlike"
-                    val newCount = post.likesCount + 1
-                    holder.likeCount.text = newCount.toString()
-                    items[position] = post.copy(likesCount = newCount)
                 }
+
+                val refreshed = postRepository?.let {
+                    withContext(Dispatchers.IO) { it.getPost(post.id) }
+                }
+                val updated = refreshed ?: optimistic
+                items[position] = updated
+                holder.likeCount.text = updated.likesCount.toString()
+                holder.commentCount.text = updated.commentsCount.toString()
             } catch (e: Exception) {
                 // Error handling - could show a snackbar
             }

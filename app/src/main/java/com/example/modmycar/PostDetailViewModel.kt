@@ -1,5 +1,6 @@
 package com.example.modmycar
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,6 +84,7 @@ class PostDetailViewModel(
                     val updatedCount = (_post.value?.likesCount ?: 0) + 1
                     _post.value = _post.value?.copy(likesCount = updatedCount)
                 }
+                refreshPostState(postId)
             } catch (e: Exception) {
                 _error.value = "Failed to toggle like: ${e.message}"
             }
@@ -110,9 +112,8 @@ class PostDetailViewModel(
                 val created = commentRepository.createComment(comment)
                 val updatedComments = _comments.value + created
                 _comments.value = updatedComments
-                _post.value = _post.value?.copy(
-                    commentsCount = updatedComments.size
-                )
+                _post.value = _post.value?.copy(commentsCount = updatedComments.size)
+                refreshPostState(postId)
             } catch (e: Exception) {
                 _error.value = "Failed to add comment: ${e.message}"
             }
@@ -125,9 +126,8 @@ class PostDetailViewModel(
                 commentRepository.deleteComment(commentId)
                 val updatedComments = _comments.value.filter { it.id != commentId }
                 _comments.value = updatedComments
-                _post.value = _post.value?.copy(
-                    commentsCount = updatedComments.size
-                )
+                _post.value = _post.value?.copy(commentsCount = updatedComments.size)
+                _post.value?.id?.let { refreshPostState(it) }
             } catch (e: Exception) {
                 _error.value = "Failed to delete comment: ${e.message}"
             }
@@ -136,6 +136,15 @@ class PostDetailViewModel(
 
     fun clearError() {
         _error.value = null
+    }
+
+    private suspend fun refreshPostState(postId: String) {
+        try {
+            val latest = postRepository.getPost(postId)
+            _post.value = latest
+        } catch (e: Exception) {
+            Log.w("PostDetailViewModel", "Failed to refresh post $postId", e)
+        }
     }
 }
 

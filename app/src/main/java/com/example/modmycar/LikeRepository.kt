@@ -3,6 +3,8 @@ package com.example.modmycar
 import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Count
 import io.github.jan.supabase.postgrest.query.Order
 
 private const val LIKE_TAG = "LikeRepository"
@@ -67,12 +69,12 @@ class SupabaseLikeRepository(
 
     private suspend fun adjustPostLikeCount(postId: String, delta: Int) {
         try {
-            val result = client.from("posts").select {
-                filter { eq("id", postId) }
-                single()
+            val likeResult = client.from("likes").select(columns = Columns.list("id")) {
+                filter { eq("post_id", postId) }
+                count(Count.EXACT)
             }
-            val currentCount = result.decodeAs<Post>().likesCount
-            val updated = (currentCount + delta).coerceAtLeast(0)
+            val updated = likeResult.countOrNull()?.toInt()
+                ?: likeResult.decodeList<Like>().size
 
             client.from("posts").update(mapOf("likes_count" to updated)) {
                 filter { eq("id", postId) }

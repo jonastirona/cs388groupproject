@@ -4,6 +4,7 @@ import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Count
 import io.github.jan.supabase.postgrest.query.Order
 
 private const val TAG = "CommentRepository"
@@ -80,12 +81,12 @@ class SupabaseCommentRepository(
 
     private suspend fun adjustPostCommentCount(postId: String, delta: Int) {
         try {
-            val result = client.from("posts").select {
-                filter { eq("id", postId) }
-                single()
+            val commentResult = client.from("comments").select(columns = Columns.list("id")) {
+                filter { eq("post_id", postId) }
+                count(Count.EXACT)
             }
-            val currentCount = result.decodeAs<Post>().commentsCount
-            val updated = (currentCount + delta).coerceAtLeast(0)
+            val updated = commentResult.countOrNull()?.toInt()
+                ?: commentResult.decodeList<Comment>().size
             client.from("posts").update(mapOf("comments_count" to updated)) {
                 filter { eq("id", postId) }
             }
