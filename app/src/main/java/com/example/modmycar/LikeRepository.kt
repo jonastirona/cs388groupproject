@@ -1,7 +1,13 @@
 package com.example.modmycar
 
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Count
+import io.github.jan.supabase.postgrest.query.Order
+
+private const val LIKE_TAG = "LikeRepository"
 
 interface LikeRepository {
     suspend fun isLiked(postId: String, userId: String): Boolean
@@ -21,12 +27,12 @@ class SupabaseLikeRepository(
                     eq("post_id", postId)
                     eq("user_id", userId)
                 }
+                order("created_at", Order.DESCENDING)
             }
         return response.decodeList<Like>().isNotEmpty()
     }
 
     override suspend fun likePost(postId: String, userId: String): Like {
-        // Check if already liked
         if (isLiked(postId, userId)) {
             throw IllegalStateException("Post is already liked by this user")
         }
@@ -39,6 +45,7 @@ class SupabaseLikeRepository(
         val inserted = client.from("likes").insert(likeData) {
             select()
         }
+        adjustPostLikeCount(postId, 1)
         return inserted.decodeSingle<Like>()
     }
 
@@ -49,6 +56,7 @@ class SupabaseLikeRepository(
                 eq("user_id", userId)
             }
         }
+        adjustPostLikeCount(postId, -1)
     }
 
     override suspend fun getLikeCount(postId: String): Int {
@@ -57,6 +65,23 @@ class SupabaseLikeRepository(
                 filter { eq("post_id", postId) }
             }
         return response.decodeList<Like>().size
+    }
+
+    private suspend fun adjustPostLikeCount(postId: String, delta: Int) {
+        try {
+            val likeResult = client.from("likes").select(columns = Columns.list("id")) {
+                filter { eq("post_id", postId) }
+                count(Count.EXACT)
+            }
+            val updated = likeResult.countOrNull()?.toInt()
+                ?: likeResult.decodeList<Like>().size
+
+            client.from("posts").update(mapOf("likes_count" to updated)) {
+                filter { eq("id", postId) }
+            }
+        } catch (e: Exception) {
+            Log.e(LIKE_TAG, "Failed to adjust likes count for postId=$postId", e)
+        }
     }
 }
 

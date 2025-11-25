@@ -1,5 +1,6 @@
 package com.example.modmycar
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,18 +76,15 @@ class PostDetailViewModel(
                 if (_isLiked.value) {
                     likeRepository.unlikePost(postId, userId)
                     _isLiked.value = false
-                    // Update like count
-                    _post.value = _post.value?.copy(
-                        likesCount = (_post.value?.likesCount ?: 0) - 1
-                    )
+                    val updatedCount = ((_post.value?.likesCount ?: 0) - 1).coerceAtLeast(0)
+                    _post.value = _post.value?.copy(likesCount = updatedCount)
                 } else {
                     likeRepository.likePost(postId, userId)
                     _isLiked.value = true
-                    // Update like count
-                    _post.value = _post.value?.copy(
-                        likesCount = (_post.value?.likesCount ?: 0) + 1
-                    )
+                    val updatedCount = (_post.value?.likesCount ?: 0) + 1
+                    _post.value = _post.value?.copy(likesCount = updatedCount)
                 }
+                refreshPostState(postId)
             } catch (e: Exception) {
                 _error.value = "Failed to toggle like: ${e.message}"
             }
@@ -112,11 +110,10 @@ class PostDetailViewModel(
                     createdAt = ""
                 )
                 val created = commentRepository.createComment(comment)
-                _comments.value = _comments.value + created
-                // Update comment count
-                _post.value = _post.value?.copy(
-                    commentsCount = (_post.value?.commentsCount ?: 0) + 1
-                )
+                val updatedComments = _comments.value + created
+                _comments.value = updatedComments
+                _post.value = _post.value?.copy(commentsCount = updatedComments.size)
+                refreshPostState(postId)
             } catch (e: Exception) {
                 _error.value = "Failed to add comment: ${e.message}"
             }
@@ -127,11 +124,10 @@ class PostDetailViewModel(
         viewModelScope.launch {
             try {
                 commentRepository.deleteComment(commentId)
-                _comments.value = _comments.value.filter { it.id != commentId }
-                // Update comment count
-                _post.value = _post.value?.copy(
-                    commentsCount = (_post.value?.commentsCount ?: 0) - 1
-                )
+                val updatedComments = _comments.value.filter { it.id != commentId }
+                _comments.value = updatedComments
+                _post.value = _post.value?.copy(commentsCount = updatedComments.size)
+                _post.value?.id?.let { refreshPostState(it) }
             } catch (e: Exception) {
                 _error.value = "Failed to delete comment: ${e.message}"
             }
@@ -140,6 +136,15 @@ class PostDetailViewModel(
 
     fun clearError() {
         _error.value = null
+    }
+
+    private suspend fun refreshPostState(postId: String) {
+        try {
+            val latest = postRepository.getPost(postId)
+            _post.value = latest
+        } catch (e: Exception) {
+            Log.w("PostDetailViewModel", "Failed to refresh post $postId", e)
+        }
     }
 }
 
