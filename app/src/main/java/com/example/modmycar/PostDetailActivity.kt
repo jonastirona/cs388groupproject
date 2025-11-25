@@ -2,29 +2,39 @@ package com.example.modmycar
 
 import android.app.Activity
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
-import coil.load
-import io.github.jan.supabase.SupabaseClient
-import kotlinx.coroutines.launch
-import androidx.lifecycle.Lifecycle
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.launch
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.ui.PlayerView
+
 class PostDetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: PostDetailViewModel
     private lateinit var commentsAdapter: CommentsAdapter
+
+    // 🔹 Audio playback state
+    private var mediaPlayer: MediaPlayer? = null
+    private var currentlyPlayingUrl: String? = null
+
+    private var exoPlayer: ExoPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,14 +45,12 @@ class PostDetailActivity : AppCompatActivity() {
 
         viewModel = ViewModelProvider(this)[PostDetailViewModel::class.java]
 
-        // Get current user ID
         lifecycleScope.launch {
             try {
                 val session = com.example.modmycar.SupabaseClient.client.auth.currentSessionOrNull()
                 val userId = session?.user?.id
                 userId?.let { viewModel.setCurrentUserId(it) }
             } catch (e: Exception) {
-                // User not authenticated, but we can still show the post
             }
         }
 
@@ -72,7 +80,11 @@ class PostDetailActivity : AppCompatActivity() {
             if (currentUserId != null) {
                 viewModel.toggleLike()
             } else {
-                Snackbar.make(findViewById(android.R.id.content), "Please sign in to like posts", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(
+                    findViewById(android.R.id.content),
+                    "Please sign in to like posts",
+                    Snackbar.LENGTH_SHORT
+                ).show()
             }
         }
 
@@ -83,7 +95,11 @@ class PostDetailActivity : AppCompatActivity() {
                 null
             }
             if (currentUserId == null) {
-                Snackbar.make(findViewById(android.R.id.content), "Please sign in to comment", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(
+                    findViewById(android.R.id.content),
+                    "Please sign in to comment",
+                    Snackbar.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
             val content = commentInput.text.toString().trim()
@@ -94,7 +110,6 @@ class PostDetailActivity : AppCompatActivity() {
         }
 
         commentsAdapter = CommentsAdapter { comment ->
-            // Allow deleting own comments
             val currentUserId = try {
                 com.example.modmycar.SupabaseClient.client.auth.currentSessionOrNull()?.user?.id
             } catch (e: Exception) {
@@ -139,7 +154,11 @@ class PostDetailActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.error.collect { error ->
                     error?.let {
-                        Snackbar.make(findViewById(android.R.id.content), it, Snackbar.LENGTH_LONG).show()
+                        Snackbar.make(
+                            findViewById(android.R.id.content),
+                            it,
+                            Snackbar.LENGTH_LONG
+                        ).show()
                         viewModel.clearError()
                     }
                 }
@@ -154,21 +173,95 @@ class PostDetailActivity : AppCompatActivity() {
         val likeCountView = findViewById<TextView>(R.id.likeCount)
         val commentCountView = findViewById<TextView>(R.id.commentCount)
 
+        val audioPreview = findViewById<View>(R.id.audioPreviewContainer)
+        val audioIcon = findViewById<ImageView>(R.id.audioIcon)
+
         captionView.text = post.caption ?: "(no caption)"
         metaView.text = "by ${post.userId}"
 
+        val videoContainer = findViewById<View>(R.id.videoPlayerContainer)
+        val videoView = findViewById<PlayerView>(R.id.videoPlayerView)
+        val videoUrl = post.media.firstOrNull { it.type == "video" && it.url.isNotBlank() }?.url
+
+        if (videoUrl != null) {
+            videoContainer.visibility = View.VISIBLE
+            imageView.visibility = View.GONE
+            audioPreview.visibility = View.GONE
+
+            if (exoPlayer == null) {
+                exoPlayer = ExoPlayer.Builder(this).build()
+            }
+
+            videoView.player = exoPlayer
+            val mediaItem = MediaItem.fromUri(videoUrl)
+            exoPlayer?.setMediaItem(mediaItem)
+            exoPlayer?.prepare()
+            exoPlayer?.play()
+        } else {
+            videoContainer.visibility = View.GONE
+        }
+
+        val audioUrl = post.media.firstOrNull { it.type == "audio" && it.url.isNotBlank() }?.url
+        if (audioUrl != null) {
+            audioPreview.visibility = View.VISIBLE
+
+            if (audioUrl == currentlyPlayingUrl) {
+                audioIcon.setImageResource(android.R.drawable.ic_media_pause)
+            } else {
+                audioIcon.setImageResource(android.R.drawable.ic_media_play)
+            }
+
+            audioPreview.setOnClickListener {
+                handleAudioPlayback(audioUrl, audioIcon)
+            }
+        } else {
+            audioPreview.visibility = View.GONE
+        }
+
         val firstImage = post.media.firstOrNull { it.type == "image" && it.url.isNotBlank() }?.url
-        if (firstImage != null) {
+        if (firstImage != null && videoUrl == null) {
             imageView.visibility = View.VISIBLE
             imageView.load(firstImage) {
                 crossfade(true)
             }
-        } else {
+        } else if (videoUrl == null) {
             imageView.visibility = View.GONE
         }
 
         likeCountView.text = "${post.likesCount} likes"
         commentCountView.text = "${post.commentsCount} comments"
+    }
+
+    private fun handleAudioPlayback(url: String, icon: ImageView) {
+        if (mediaPlayer != null && currentlyPlayingUrl == url) {
+            if (mediaPlayer!!.isPlaying) {
+                mediaPlayer!!.pause()
+                icon.setImageResource(android.R.drawable.ic_media_play)
+            } else {
+                mediaPlayer!!.start()
+                icon.setImageResource(android.R.drawable.ic_media_pause)
+            }
+            return
+        }
+        if (mediaPlayer != null) {
+            mediaPlayer!!.stop()
+            mediaPlayer!!.release()
+            mediaPlayer = null
+        }
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(url)
+
+            setOnPreparedListener {
+                start()
+                icon.setImageResource(android.R.drawable.ic_media_pause)
+            }
+            setOnCompletionListener {
+                icon.setImageResource(android.R.drawable.ic_media_play)
+                currentlyPlayingUrl = null
+            }
+            prepareAsync()
+        }
+        currentlyPlayingUrl = url
     }
 
     override fun finish() {
@@ -184,6 +277,22 @@ class PostDetailActivity : AppCompatActivity() {
         super.finish()
     }
 
+    override fun onStop() {
+        super.onStop()
+        exoPlayer?.pause()
+    }
+
+    override fun onDestroy() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+
+        exoPlayer?.release()
+        exoPlayer = null
+
+        super.onDestroy()
+    }
+
     companion object {
         const val EXTRA_POST_ID = "extra_post_id"
         const val EXTRA_POST_LIKES = "extra_post_likes"
@@ -191,7 +300,6 @@ class PostDetailActivity : AppCompatActivity() {
     }
 }
 
-// Comments Adapter
 class CommentsAdapter(
     private val onCommentClick: (Comment) -> Unit
 ) : RecyclerView.Adapter<CommentsAdapter.CommentViewHolder>() {
@@ -229,18 +337,16 @@ class CommentsAdapter(
             contentView.text = comment.content
             userView.text = comment.authorProfile?.displayName
                 ?: comment.authorProfile?.username
-                ?: "User ${comment.userId.take(8)}"
+                        ?: "User ${comment.userId.take(8)}"
             timeView.text = formatTime(comment.createdAt)
         }
 
         private fun formatTime(createdAt: String): String {
             return try {
-                // Simple formatting - you can improve this with proper date parsing
-                createdAt.take(10) // Just show date for now
+                createdAt.take(10)
             } catch (e: Exception) {
                 ""
             }
         }
     }
 }
-
