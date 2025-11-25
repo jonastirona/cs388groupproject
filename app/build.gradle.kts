@@ -42,6 +42,13 @@ android {
             "NEWS_API_KEY",
             "\"${localProperties.getProperty("NEWS_API_KEY", "")}\""
         )
+        buildConfigField(
+            "String",
+            "GOOGLE_MAPS_API_KEY",
+            "\"${localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")}\""
+        )
+        
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")
     }
 
     buildTypes {
@@ -111,5 +118,10 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-client-content-negotiation:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-serialization-kotlinx-json:${libs.versions.ktor.get()}")
+    
+    // Google Maps and Places
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.libraries.places:places:3.3.0")
 
 }

@@ -6,11 +6,7 @@ class PopularBuildsActivity : SimplePlaceholderActivity() {
         "This screen will highlight trending builds curated from the community."
 }
 
-class NearbyShopsActivity : SimplePlaceholderActivity() {
-    override val screenTitle: String = "Nearby Shops"
-    override val descriptionText: String =
-        "A map of nearby tuning or parts shops will appear here."
-}
+// NearbyShopsActivity has been moved to its own file with full implementation
 
 class FriendsListActivity : SimplePlaceholderActivity() {
     override val screenTitle: String = "Friends List"
