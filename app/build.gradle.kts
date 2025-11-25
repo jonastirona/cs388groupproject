@@ -85,11 +85,11 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation(libs.kotlinx.serialization.json) // Serialization library
-    implementation(libs.androidx.lifecycle.viewmodel.ktx) // ViewModelScope
-    implementation(libs.androidx.lifecycle.runtime.ktx)   // Lifecycle support
-    implementation(libs.kotlinx.coroutines.android)       // Main dispatcher for coroutines
-    implementation("io.coil-kt:coil:2.6.0") // Coil image loader
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation("io.coil-kt:coil:2.6.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
     implementation("androidx.cardview:cardview:1.0.0")
@@ -97,11 +97,17 @@ dependencies {
     implementation("org.jsoup:jsoup:1.17.2")
 
 
-    // Supabase - using BOM for version management
+    // Supabase 
     implementation(platform("io.github.jan-tennert.supabase:bom:${libs.versions.supabase.get()}"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:storage-kt")
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    
+    // Ktor for Supabase
     implementation("io.ktor:ktor-client-cio:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-client-content-negotiation:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-serialization-kotlinx-json:${libs.versions.ktor.get()}")
