@@ -1,5 +1,7 @@
 package com.example.modmycar
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -169,8 +171,23 @@ class PostDetailActivity : AppCompatActivity() {
         commentCountView.text = "${post.commentsCount} comments"
     }
 
+    override fun finish() {
+        val currentPost = viewModel.post.value
+        if (currentPost != null) {
+            val data = Intent().apply {
+                putExtra(EXTRA_POST_ID, currentPost.id)
+                putExtra(EXTRA_POST_LIKES, currentPost.likesCount)
+                putExtra(EXTRA_POST_COMMENTS, currentPost.commentsCount)
+            }
+            setResult(Activity.RESULT_OK, data)
+        }
+        super.finish()
+    }
+
     companion object {
         const val EXTRA_POST_ID = "extra_post_id"
+        const val EXTRA_POST_LIKES = "extra_post_likes"
+        const val EXTRA_POST_COMMENTS = "extra_post_comments"
     }
 }
 
@@ -210,7 +227,9 @@ class CommentsAdapter(
 
         fun bind(comment: Comment) {
             contentView.text = comment.content
-            userView.text = "User ${comment.userId.take(8)}"
+            userView.text = comment.authorProfile?.displayName
+                ?: comment.authorProfile?.username
+                ?: "User ${comment.userId.take(8)}"
             timeView.text = formatTime(comment.createdAt)
         }
 

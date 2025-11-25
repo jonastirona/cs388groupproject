@@ -34,6 +34,18 @@ class FeedAdapter(
         notifyDataSetChanged() // Will swap to DiffUtil later
     }
 
+    fun updatePostCounts(postId: String, likesCount: Int, commentsCount: Int) {
+        val index = items.indexOfFirst { it.id == postId }
+        if (index >= 0) {
+            val updated = items[index].copy(
+                likesCount = likesCount,
+                commentsCount = commentsCount
+            )
+            items[index] = updated
+            notifyItemChanged(index)
+        }
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_post, parent, false)

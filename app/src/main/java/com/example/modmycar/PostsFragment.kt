@@ -1,8 +1,10 @@
 package com.example.modmycar
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -18,6 +20,18 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
 
     private val feedViewModel: FeedViewModel by viewModels()
     private lateinit var adapter: FeedAdapter
+    private val postDetailLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+        val data = result.data ?: return@registerForActivityResult
+        val postId = data.getStringExtra(PostDetailActivity.EXTRA_POST_ID) ?: return@registerForActivityResult
+        val likes = data.getIntExtra(PostDetailActivity.EXTRA_POST_LIKES, -1)
+        val comments = data.getIntExtra(PostDetailActivity.EXTRA_POST_COMMENTS, -1)
+        if (likes >= 0 && comments >= 0) {
+            adapter.updatePostCounts(postId, likes, comments)
+        }
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -30,7 +44,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             val intent = Intent(requireContext(), PostDetailActivity::class.java).apply {
                 putExtra(PostDetailActivity.EXTRA_POST_ID, post.id)
             }
-            startActivity(intent)
+            postDetailLauncher.launch(intent)
         })
 
         val layoutManager = LinearLayoutManager(requireContext())

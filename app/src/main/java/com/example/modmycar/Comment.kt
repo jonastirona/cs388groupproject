@@ -19,6 +19,17 @@ data class Comment(
     val createdAt: String = "",
 
     @SerialName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+
+    @SerialName("profiles")
+    val authorProfile: CommentAuthor? = null
+)
+
+@Serializable
+data class CommentAuthor(
+    val id: String? = null,
+    val username: String? = null,
+    @SerialName("display_name")
+    val displayName: String? = null
 )
 

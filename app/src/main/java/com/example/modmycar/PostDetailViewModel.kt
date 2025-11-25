@@ -75,17 +75,13 @@ class PostDetailViewModel(
                 if (_isLiked.value) {
                     likeRepository.unlikePost(postId, userId)
                     _isLiked.value = false
-                    // Update like count
-                    _post.value = _post.value?.copy(
-                        likesCount = (_post.value?.likesCount ?: 0) - 1
-                    )
+                    val updatedCount = ((_post.value?.likesCount ?: 0) - 1).coerceAtLeast(0)
+                    _post.value = _post.value?.copy(likesCount = updatedCount)
                 } else {
                     likeRepository.likePost(postId, userId)
                     _isLiked.value = true
-                    // Update like count
-                    _post.value = _post.value?.copy(
-                        likesCount = (_post.value?.likesCount ?: 0) + 1
-                    )
+                    val updatedCount = (_post.value?.likesCount ?: 0) + 1
+                    _post.value = _post.value?.copy(likesCount = updatedCount)
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to toggle like: ${e.message}"
@@ -112,10 +108,10 @@ class PostDetailViewModel(
                     createdAt = ""
                 )
                 val created = commentRepository.createComment(comment)
-                _comments.value = _comments.value + created
-                // Update comment count
+                val updatedComments = _comments.value + created
+                _comments.value = updatedComments
                 _post.value = _post.value?.copy(
-                    commentsCount = (_post.value?.commentsCount ?: 0) + 1
+                    commentsCount = updatedComments.size
                 )
             } catch (e: Exception) {
                 _error.value = "Failed to add comment: ${e.message}"
@@ -127,10 +123,10 @@ class PostDetailViewModel(
         viewModelScope.launch {
             try {
                 commentRepository.deleteComment(commentId)
-                _comments.value = _comments.value.filter { it.id != commentId }
-                // Update comment count
+                val updatedComments = _comments.value.filter { it.id != commentId }
+                _comments.value = updatedComments
                 _post.value = _post.value?.copy(
-                    commentsCount = (_post.value?.commentsCount ?: 0) - 1
+                    commentsCount = updatedComments.size
                 )
             } catch (e: Exception) {
                 _error.value = "Failed to delete comment: ${e.message}"
