@@ -38,6 +38,34 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
+            <!-- Audio Preview -->
+            <LinearLayout
+                android:id="@+id/audioPreviewContainer"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:background="#1A000000"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp">
+
+                <ImageView
+                    android:id="@+id/audioIcon"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_media_play" />
+
+                <TextView
+                    android:id="@+id/audioLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Audio Clip"
+                    android:textSize="18sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginStart="12dp" />
+            </LinearLayout>
+
             <ImageView
                 android:id="@+id/postImage"
                 android:layout_width="match_parent"
@@ -46,6 +74,23 @@
                 android:visibility="gone"
                 android:layout_marginBottom="8dp"
                 android:contentDescription="Post image" />
+
+            <!-- Video Player Container -->
+            <FrameLayout
+                android:id="@+id/videoPlayerContainer"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp">
+
+                <com.google.android.exoplayer2.ui.PlayerView
+                    android:id="@+id/videoPlayerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#000000"
+                    app:use_controller="true" />
+
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/postMeta"
