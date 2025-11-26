@@ -40,7 +40,7 @@
         android:padding="12dp"
         android:background="#1A000000"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/tvCaption"
+        app:layout_constraintTop_toBottomOf="@id/postImage"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -59,33 +59,6 @@
             android:textColor="@android:color/white"
             android:layout_marginStart="12dp" />
     </LinearLayout>
-
-    <!-- Video Preview -->
-    <FrameLayout
-        android:id="@+id/videoPreviewContainer"
-        android:layout_width="0dp"
-        android:layout_height="200dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/audioPreviewContainer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <ImageView
-            android:id="@+id/videoThumbnail"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@android:color/darker_gray" />
-
-        <ImageView
-            android:id="@+id/videoPlayIcon"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_gravity="center"
-            android:src="@android:drawable/ic_media_play" />
-            <!-- android:tint="@android:color/white" /> -->
-
-    </FrameLayout>
 
     <!-- Meta -->
     <TextView
