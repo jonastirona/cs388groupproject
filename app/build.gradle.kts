@@ -124,4 +124,10 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.android.libraries.places:places:3.3.0")
 
+    //Coil Video Extension
+    implementation("io.coil-kt:coil-video:2.4.0")
+    implementation("io.coil-kt:coil-video:2.2.2")
+
+    // ExoPlayer
+    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
 }
