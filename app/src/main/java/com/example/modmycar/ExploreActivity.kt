@@ -18,7 +18,9 @@ class ExploreActivity : AppCompatActivity() {
             startActivity(Intent(this, PopularBuildsActivity::class.java))
         }
 
-
+        findViewById<android.view.View>(R.id.openNearbyShops).setOnClickListener {
+            startActivity(Intent(this, NearbyShopsActivity::class.java))
+        }
     }
 }
 
