@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.ImageView
 import coil.load
-import androidx.core.view.isVisible
 import coil.request.videoFrameMillis
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.CoroutineScope
@@ -68,9 +67,6 @@ class FeedAdapter(
         val imageView = holder.itemView.findViewById<ImageView>(R.id.postImage)
         val audioPreview = holder.itemView.findViewById<View>(R.id.audioPreviewContainer)
         val audioIcon = holder.itemView.findViewById<ImageView>(R.id.audioIcon)
-        val videoPreview = holder.itemView.findViewById<View>(R.id.videoPreviewContainer)
-        val videoThumbnail = holder.itemView.findViewById<ImageView>(R.id.videoThumbnail)
-        val videoPlayIcon = holder.itemView.findViewById<ImageView>(R.id.videoPlayIcon)
 
         val hasImage = post.media.any { it.type == "image" && it.url.isNotBlank() }
         val hasAudio = post.media.any { it.type == "audio" && it.url.isNotBlank() }
@@ -82,20 +78,9 @@ class FeedAdapter(
 
         imageView.visibility = View.GONE
         audioPreview.visibility = View.GONE
-        videoPreview.visibility = View.GONE
+        // No video UI on the main feed
 
-        if (hasVideo && videoUrl != null) {
-            videoPreview.visibility = View.VISIBLE
-            videoThumbnail.load(videoUrl) {
-                crossfade(true)
-                videoFrameMillis(1000L)
-                placeholder(android.R.color.darker_gray)
-                error(android.R.color.darker_gray)
-            }
-            videoPreview.setOnClickListener {
-                onPostClick(post)
-            }
-        } else if (hasAudio && audioUrl != null) {
+        if (hasAudio && audioUrl != null) {
             audioPreview.visibility = View.VISIBLE
             imageView.visibility = View.GONE
             if (post.id == currentlyPlayingPostId) {
