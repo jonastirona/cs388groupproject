@@ -17,18 +17,27 @@ import coil.load
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class CarDetailActivity : AppCompatActivity() {
 
     private var garageCarId: String? = null
+    private var carId: String? = null
     private var currentColor: String = "#FF0000"
     private var currentYear: Int = 0
     private lateinit var modHierarchyRecyclerView: RecyclerView
     private lateinit var modHierarchyAdapter: ModHierarchyAdapter
     private lateinit var carMediaViewPager: ViewPager2
     private lateinit var carMediaAdapter: CarMediaAdapter
-    
+
+    private val modRepository: ModRepository = SupabaseModRepository()
+    private val garageModRepository: GarageModRepository = SupabaseGarageModRepository()
+    private val authRepository: AuthRepository = SupabaseAuthRepository()
+
+    private var currentUserId: String? = null
+
     private val garageCarRepository: GarageCarRepository = SupabaseGarageCarRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +49,7 @@ class CarDetailActivity : AppCompatActivity() {
 
         // Get car data from intent
         garageCarId = intent.getStringExtra("GARAGE_CAR_ID")
+        carId = intent.getStringExtra("CAR_ID")
         val carMake = intent.getStringExtra("CAR_MAKE") ?: ""
         val carModel = intent.getStringExtra("CAR_MODEL") ?: ""
         currentYear = intent.getIntExtra("CAR_YEAR", 0)
@@ -117,50 +127,143 @@ class CarDetailActivity : AppCompatActivity() {
         modHierarchyRecyclerView = findViewById(R.id.modHierarchyRecyclerView)
         modHierarchyRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        // TODO: Replace with actual mod data from repository
-        val placeholderMods = listOf(
-            ModHierarchyItem(
-                modId = "1",
-                name = "Engine",
-                category = "engine",
-                children = listOf(
-                    ModHierarchyItem("1-1", "Forged Rods", "engine"),
-                    ModHierarchyItem("1-2", "Forged Pistons", "engine"),
-                    ModHierarchyItem("1-3", "Crankshaft", "engine")
-                )
-            ),
-            ModHierarchyItem(
-                modId = "2",
-                name = "Exhaust",
-                category = "exhaust",
-                children = listOf(
-                    ModHierarchyItem("2-1", "Manifold", "exhaust"),
-                    ModHierarchyItem("2-2", "Catalytic Converter", "exhaust"),
-                    ModHierarchyItem("2-3", "Resonator", "exhaust"),
-                    ModHierarchyItem("2-4", "Muffler", "exhaust")
-                )
-            ),
-            ModHierarchyItem(
-                modId = "3",
-                name = "Forced Induction",
-                category = "forced_induction",
-                children = listOf(
-                    ModHierarchyItem("3-1", "Supercharger", "forced_induction"),
-                    ModHierarchyItem("3-2", "Turbo", "forced_induction")
-                )
-            ),
-            ModHierarchyItem(
-                modId = "4",
-                name = "Transmission",
-                category = "transmission",
-                children = listOf(
-                    ModHierarchyItem("4-1", "Clutch", "transmission")
-                )
-            )
-        )
-
-        modHierarchyAdapter = ModHierarchyAdapter(placeholderMods)
+        modHierarchyAdapter = ModHierarchyAdapter(emptyList()) { modId, isCompleted ->
+            toggleGarageMod(modId, isCompleted)
+        }
         modHierarchyRecyclerView.adapter = modHierarchyAdapter
+
+        // Load current user and mod tree
+        lifecycleScope.launch {
+            val userResult = authRepository.getCurrentSession()
+            currentUserId = when (userResult) {
+                is AuthResult.Success -> userResult.data?.id
+                is AuthResult.Error -> null
+            }
+
+            if (currentUserId == null) {
+                Toast.makeText(
+                    this@CarDetailActivity,
+                    "Please sign in to track mods",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@launch
+            }
+
+            val localCarId = carId
+            if (localCarId == null) {
+                Toast.makeText(
+                    this@CarDetailActivity,
+                    "Car information not found",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@launch
+            }
+
+            loadModHierarchy(localCarId, currentUserId!!)
+        }
+    }
+
+    private suspend fun loadModHierarchy(carId: String, userId: String) {
+        // Get mod tree for this car
+        val modTreeResult = modRepository.getModTree(carId)
+        if (modTreeResult is AuthResult.Error) {
+            Toast.makeText(
+                this,
+                "Failed to load mods: ${modTreeResult.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        val modTree = (modTreeResult as AuthResult.Success).data
+
+        // Get completed mods for this user
+        val garageModsResult = garageModRepository.getGarageModsByUserId(userId)
+        if (garageModsResult is AuthResult.Error) {
+            Toast.makeText(
+                this,
+                "Failed to load completed mods: ${garageModsResult.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        val completedModIds = (garageModsResult as AuthResult.Success).data
+            .map { it.modId }
+            .toSet()
+
+        fun mapTree(node: ModWithChildren): ModHierarchyItem {
+            return ModHierarchyItem(
+                modId = node.mod.id,
+                name = node.mod.name,
+                category = node.mod.category,
+                isCompleted = completedModIds.contains(node.mod.id),
+                children = node.children.map { child -> mapTree(child) }
+            )
+        }
+
+        val rootItems = modTree.map { mapTree(it) }
+
+        withContext(Dispatchers.Main) {
+            modHierarchyAdapter.updateMods(rootItems)
+        }
+    }
+
+    private fun toggleGarageMod(modId: String, isCompleted: Boolean) {
+        val userId = currentUserId
+        if (userId == null) {
+            Toast.makeText(this, "Please sign in to track mods", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            if (isCompleted) {
+                // Mark as completed by creating a garage_mod entry
+                val create = GarageModCreate(
+                    userId = userId,
+                    modId = modId,
+                    completedAt = null // Supabase can set this via triggers, or remain null
+                )
+                when (val result = garageModRepository.createGarageMod(create)) {
+                    is AuthResult.Success -> {
+                        // Reload hierarchy to reflect change
+                        val localCarId = carId
+                        if (localCarId != null) {
+                            loadModHierarchy(localCarId, userId)
+                        }
+                    }
+                    is AuthResult.Error -> {
+                        Toast.makeText(
+                            this@CarDetailActivity,
+                            "Failed to mark mod complete: ${result.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            } else {
+                // Unmark: find existing garage_mod entries for this user+mod and delete them
+                when (val gmResult = garageModRepository.getGarageModsByUserId(userId)) {
+                    is AuthResult.Success -> {
+                        val matching = gmResult.data.filter { it.modId == modId }
+                        matching.forEach { gm ->
+                            garageModRepository.deleteGarageMod(gm.id)
+                        }
+
+                        val localCarId = carId
+                        if (localCarId != null) {
+                            loadModHierarchy(localCarId, userId)
+                        }
+                    }
+                    is AuthResult.Error -> {
+                        Toast.makeText(
+                            this@CarDetailActivity,
+                            "Failed to update mod: ${gmResult.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     private fun setupCarMedia() {
