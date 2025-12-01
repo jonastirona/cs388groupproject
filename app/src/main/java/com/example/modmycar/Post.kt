@@ -15,6 +15,8 @@ data class Post(
 
     val caption: String? = null,
 
+    val description: String? = null,
+
     val media: List<MediaItem> = emptyList(),
 
     @SerialName("likes_count")

@@ -5,8 +5,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -28,10 +30,13 @@ class PostDetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: PostDetailViewModel
     private lateinit var commentsAdapter: CommentsAdapter
+    private lateinit var deletePostButton: ImageButton
 
     private var exoPlayer: ExoPlayer? = null
     private var currentAudioUrl: String? = null
+    private var currentVideoUrl: String? = null
     private var isAudioPlaying: Boolean = false
+    private var postWasDeleted: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,6 +72,12 @@ class PostDetailActivity : AppCompatActivity() {
         val commentInput = findViewById<EditText>(R.id.commentInput)
         val sendCommentButton = findViewById<MaterialButton>(R.id.sendCommentButton)
         val commentsRecyclerView = findViewById<RecyclerView>(R.id.commentsRecyclerView)
+        deletePostButton = findViewById(R.id.deletePostButton)
+
+        // Delete button click handler
+        deletePostButton.setOnClickListener {
+            showDeleteConfirmationDialog()
+        }
 
         likeButton.setOnClickListener {
             val currentUserId = try {
@@ -125,7 +136,10 @@ class PostDetailActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.post.collect { post ->
-                    post?.let { updatePostViews(it) }
+                    post?.let { 
+                        updatePostViews(it)
+                        updateDeleteButtonVisibility()
+                    }
                 }
             }
         }
@@ -161,6 +175,60 @@ class PostDetailActivity : AppCompatActivity() {
                 }
             }
         }
+
+        // Observe delete state
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isDeleting.collect { isDeleting ->
+                    deletePostButton.isEnabled = !isDeleting
+                    if (isDeleting) {
+                        Snackbar.make(
+                            findViewById(android.R.id.content),
+                            "Deleting post...",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
+
+        // Observe post deleted
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.postDeleted.collect { deleted ->
+                    if (deleted) {
+                        postWasDeleted = true
+                        Snackbar.make(
+                            findViewById(android.R.id.content),
+                            "Post deleted successfully",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                        // Return to feed
+                        setResult(RESULT_POST_DELETED)
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateDeleteButtonVisibility() {
+        deletePostButton.visibility = if (viewModel.isCurrentUserPostAuthor()) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Post")
+            .setMessage("Are you sure you want to delete this post? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                viewModel.deletePost()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun updatePostViews(post: Post) {
@@ -187,22 +255,30 @@ class PostDetailActivity : AppCompatActivity() {
         if (videoUrl != null) {
             videoContainer.visibility = View.VISIBLE
             imageView.visibility = View.GONE
+            audioPreview.visibility = View.GONE // Hide audio if video exists
 
-            if (exoPlayer == null) {
+            // Only setup player if not already playing this video
+            if (currentVideoUrl != videoUrl) {
+                currentVideoUrl = videoUrl
+                
+                // Release any existing player
+                exoPlayer?.release()
                 exoPlayer = ExoPlayer.Builder(this).build()
-            }
 
-            videoView.player = exoPlayer
-            val mediaItem = MediaItem.fromUri(videoUrl)
-            exoPlayer?.setMediaItem(mediaItem)
-            exoPlayer?.prepare()
-            exoPlayer?.play()
+                videoView.player = exoPlayer
+                val mediaItem = MediaItem.fromUri(videoUrl)
+                exoPlayer?.setMediaItem(mediaItem)
+                exoPlayer?.prepare()
+                exoPlayer?.playWhenReady = true
+            }
         } else {
             videoContainer.visibility = View.GONE
+            currentVideoUrl = null
         }
 
+        // Only show audio controls if there's no video
         val audioUrl = post.media.firstOrNull { it.type == "audio" && it.url.isNotBlank() }?.url
-        if (audioUrl != null) {
+        if (audioUrl != null && videoUrl == null) {
             audioPreview.visibility = View.VISIBLE
 
             if (audioUrl == currentAudioUrl && isAudioPlaying) {
@@ -290,6 +366,7 @@ class PostDetailActivity : AppCompatActivity() {
         const val EXTRA_POST_ID = "extra_post_id"
         const val EXTRA_POST_LIKES = "extra_post_likes"
         const val EXTRA_POST_COMMENTS = "extra_post_comments"
+        const val RESULT_POST_DELETED = 100
     }
 }
 

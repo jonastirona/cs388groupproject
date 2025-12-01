@@ -66,7 +66,7 @@
         android:layout_width="0dp"
         android:layout_height="200dp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/audioPreviewContainer"
+        app:layout_constraintTop_toBottomOf="@id/tvCaption"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -87,6 +87,14 @@
 
     </FrameLayout>
 
+    <!-- Barrier below all media types -->
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/mediaBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="postImage,audioPreviewContainer,videoPreviewContainer" />
+
     <!-- Meta -->
     <TextView
         android:id="@+id/tvMeta"
@@ -96,7 +104,7 @@
         android:textSize="12sp"
         android:textColor="?android:attr/textColorSecondary"
         android:layout_marginTop="6dp"
-        app:layout_constraintTop_toBottomOf="@+id/audioPreviewContainer"
+        app:layout_constraintTop_toBottomOf="@id/mediaBarrier"
         app:layout_constraintBottom_toTopOf="@+id/actionButtons"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

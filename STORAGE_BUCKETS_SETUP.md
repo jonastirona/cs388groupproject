@@ -8,6 +8,7 @@ This guide explains how to set up the required storage buckets in Supabase for t
 2. **mod-images** - Stores reference images for mods
 3. **garage-media** - Stores user-uploaded media for their garage cars
 4. **garage-mod-media** - Stores user-uploaded media for completed mods
+5. **post-media** - Stores user-uploaded media for posts (images, videos, audio)
 
 ## Setup Instructions
 
@@ -81,6 +82,23 @@ garage-mod-media/
         └── mod_<garage_mod_id>/
               ├── exhaust.mp3
               └── turbo.png
+```
+
+#### 5. post-media Bucket
+
+- **Name**: `post-media`
+- **Public bucket**: ✅ **Yes** (checked) - Posts are public, so media should be publicly viewable
+- **File size limit**: 50 MB (to accommodate videos with audio)
+- **Allowed MIME types**: `image/*, video/*, audio/*`
+
+**Folder Structure:**
+```
+post-media/
+  └── user_<user_id>/
+        └── post_<post_id>/
+              ├── image_001.jpg
+              ├── video_001.mp4
+              └── audio_001.mp3
 ```
 
 ### Step 3: Configure Storage Policies
@@ -180,6 +198,43 @@ CREATE POLICY "Users can delete their own garage mod media"
 ON storage.objects FOR DELETE
 USING (
     bucket_id = 'garage-mod-media' AND
+    (storage.foldername(name))[1] = 'user_' || auth.uid()::text
+);
+```
+
+#### For post-media Bucket (Public Read, Owner Write)
+
+Post media is publicly viewable (since posts are public), but only the post author can upload/modify/delete:
+
+**Policy for post-media:**
+```sql
+-- Anyone can view post media (public posts)
+CREATE POLICY "Public read access for post media"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'post-media');
+
+-- Authenticated users can upload to their own folder
+CREATE POLICY "Users can upload their own post media"
+ON storage.objects FOR INSERT
+WITH CHECK (
+    bucket_id = 'post-media' AND
+    auth.role() = 'authenticated' AND
+    (storage.foldername(name))[1] = 'user_' || auth.uid()::text
+);
+
+-- Users can update their own files
+CREATE POLICY "Users can update their own post media"
+ON storage.objects FOR UPDATE
+USING (
+    bucket_id = 'post-media' AND
+    (storage.foldername(name))[1] = 'user_' || auth.uid()::text
+);
+
+-- Users can delete their own files
+CREATE POLICY "Users can delete their own post media"
+ON storage.objects FOR DELETE
+USING (
+    bucket_id = 'post-media' AND
     (storage.foldername(name))[1] = 'user_' || auth.uid()::text
 );
 ```
