@@ -2,7 +2,6 @@ package com.example.modmycar
 
 import android.app.Activity
 import android.content.Intent
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -30,11 +29,9 @@ class PostDetailActivity : AppCompatActivity() {
     private lateinit var viewModel: PostDetailViewModel
     private lateinit var commentsAdapter: CommentsAdapter
 
-    // 🔹 Audio playback state
-    private var mediaPlayer: MediaPlayer? = null
-    private var currentlyPlayingUrl: String? = null
-
     private var exoPlayer: ExoPlayer? = null
+    private var currentAudioUrl: String? = null
+    private var isAudioPlaying: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -177,7 +174,11 @@ class PostDetailActivity : AppCompatActivity() {
         val audioIcon = findViewById<ImageView>(R.id.audioIcon)
 
         captionView.text = post.caption ?: "(no caption)"
-        metaView.text = "by ${post.userId}"
+        val displayName = post.authorProfile?.displayName
+            ?: post.authorProfile?.username
+            ?: post.userId.take(8)
+
+        metaView.text = "by $displayName"
 
         val videoContainer = findViewById<View>(R.id.videoPlayerContainer)
         val videoView = findViewById<PlayerView>(R.id.videoPlayerView)
@@ -186,7 +187,6 @@ class PostDetailActivity : AppCompatActivity() {
         if (videoUrl != null) {
             videoContainer.visibility = View.VISIBLE
             imageView.visibility = View.GONE
-            audioPreview.visibility = View.GONE
 
             if (exoPlayer == null) {
                 exoPlayer = ExoPlayer.Builder(this).build()
@@ -205,7 +205,7 @@ class PostDetailActivity : AppCompatActivity() {
         if (audioUrl != null) {
             audioPreview.visibility = View.VISIBLE
 
-            if (audioUrl == currentlyPlayingUrl) {
+            if (audioUrl == currentAudioUrl && isAudioPlaying) {
                 audioIcon.setImageResource(android.R.drawable.ic_media_pause)
             } else {
                 audioIcon.setImageResource(android.R.drawable.ic_media_play)
@@ -233,35 +233,33 @@ class PostDetailActivity : AppCompatActivity() {
     }
 
     private fun handleAudioPlayback(url: String, icon: ImageView) {
-        if (mediaPlayer != null && currentlyPlayingUrl == url) {
-            if (mediaPlayer!!.isPlaying) {
-                mediaPlayer!!.pause()
+        if (exoPlayer == null) {
+            exoPlayer = ExoPlayer.Builder(this).build()
+        }
+
+        val player = exoPlayer!!
+
+        if (currentAudioUrl == url) {
+            if (player.isPlaying) {
+                player.pause()
+                isAudioPlaying = false
                 icon.setImageResource(android.R.drawable.ic_media_play)
             } else {
-                mediaPlayer!!.start()
+                player.play()
+                isAudioPlaying = true
                 icon.setImageResource(android.R.drawable.ic_media_pause)
             }
             return
         }
-        if (mediaPlayer != null) {
-            mediaPlayer!!.stop()
-            mediaPlayer!!.release()
-            mediaPlayer = null
-        }
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(url)
 
-            setOnPreparedListener {
-                start()
-                icon.setImageResource(android.R.drawable.ic_media_pause)
-            }
-            setOnCompletionListener {
-                icon.setImageResource(android.R.drawable.ic_media_play)
-                currentlyPlayingUrl = null
-            }
-            prepareAsync()
-        }
-        currentlyPlayingUrl = url
+        val mediaItem = MediaItem.fromUri(url)
+        player.setMediaItem(mediaItem)
+        player.prepare()
+        player.play()
+
+        currentAudioUrl = url
+        isAudioPlaying = true
+        icon.setImageResource(android.R.drawable.ic_media_pause)
     }
 
     override fun finish() {
@@ -283,13 +281,8 @@ class PostDetailActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
-
         exoPlayer?.release()
         exoPlayer = null
-
         super.onDestroy()
     }
 

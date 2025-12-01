@@ -60,7 +60,7 @@ class SupabaseUserRepository(
             val profile = UserProfile(
                 id = userId,
                 username = username,
-                display_name = displayName
+                displayName = displayName
             )
             
             val updated = supabaseClient.from("profiles")

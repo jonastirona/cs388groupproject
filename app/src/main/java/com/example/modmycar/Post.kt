@@ -15,7 +15,6 @@ data class Post(
 
     val caption: String? = null,
 
-    // Supabase stores this as JSONB; our serializer will map it into this list
     val media: List<MediaItem> = emptyList(),
 
     @SerialName("likes_count")
@@ -31,18 +30,19 @@ data class Post(
     val createdAt: String,
 
     @SerialName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+
+    @SerialName("profiles")
+    val authorProfile: UserProfile? = null
 )
 
 @Serializable
 data class MediaItem(
-    // Matches what we inserted: {"type":"image","url":"...","width":800,"height":600}
-    val type: String,          // "image" | "audio"
+    val type: String,
     val url: String,
     val width: Int? = null,
     val height: Int? = null,
 
-    // Optional fields you might use later for audio/images
     @SerialName("duration_sec")
     val durationSec: Double? = null,
 

@@ -1,5 +1,6 @@
 package com.example.modmycar
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -14,6 +15,10 @@ data class User(
 data class UserProfile(
     val id: String,
     val username: String? = null,
-    val display_name: String? = null
-)
 
+    @SerialName("display_name")
+    val displayName: String? = null
+) {
+    val display_name: String?
+        get() = displayName
+}

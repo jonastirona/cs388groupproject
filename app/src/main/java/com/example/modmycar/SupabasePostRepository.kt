@@ -3,6 +3,8 @@ package com.example.modmycar
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.Columns
+
 
 
 /**
@@ -17,7 +19,9 @@ class SupabasePostRepository(
     // Can be switched if/when we go with the Supabase Kotlin version
     override suspend fun getFeed(limit: Int, offset: Int): List<Post> {
         val response = client.from("posts")
-            .select {
+            .select(
+                columns = Columns.raw("*, user_id, profiles:profiles!posts_user_id_fkey(id, username, display_name)")
+            ) {
                 filter {
                     eq("status", "active")
                     eq("visibility", "public")
@@ -34,13 +38,15 @@ class SupabasePostRepository(
     // ---------------- CRUD ----------------
     override suspend fun createPost(post: Post): Post {
         val inserted = client.from("posts").insert(post) {
-            select()
+            select(Columns.raw("*, user_id, profiles:profiles!posts_user_id_fkey(id, username, display_name)"))
         }
         return inserted.decodeSingle<Post>()
     }
 
     override suspend fun getPost(postId: String): Post {
-        val res = client.from("posts").select {
+        val res = client.from("posts").select(
+            columns = Columns.raw("*, user_id, profiles:profiles!posts_user_id_fkey(id, username, display_name)")
+        ) {
             filter { eq("id", postId) }
             single()
         }
@@ -50,7 +56,7 @@ class SupabasePostRepository(
     override suspend fun updatePost(postId: String, post: Post): Post {
         val res = client.from("posts").update(post) {
             filter { eq("id", postId) }
-            select()
+            select(Columns.raw("*, user_id, profiles:profiles!posts_user_id_fkey(id, username, display_name)"))
         }
         return res.decodeSingle<Post>()
     }

@@ -62,7 +62,10 @@ class FeedAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val post = items[position]
         holder.caption.text = post.caption ?: "(no caption)"
-        holder.meta.text = "by ${post.userId}"
+        val displayName = post.authorProfile?.displayName
+            ?: post.authorProfile?.username
+            ?: post.userId.take(8)
+        holder.meta.text = "by $displayName"
         holder.itemView.tag = post.id
 
         val imageView = holder.itemView.findViewById<ImageView>(R.id.postImage)
