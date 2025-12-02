@@ -50,3 +50,13 @@ data class GarageCarUpdate(
     val year: Int? = null
 )
 
+/**
+ * Represents a garage car with user location information for nearby searches.
+ */
+@Serializable
+data class NearbyGarageCar(
+    val garageCar: GarageCar,
+    val userProfile: UserProfile,
+    val distanceMiles: Double
+)
+
