@@ -31,10 +31,17 @@ class FriendsListActivity : AppCompatActivity() {
         val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.friendsSwipeRefresh)
         val progressBar = findViewById<View>(R.id.friendsProgress)
         val emptyState = findViewById<TextView>(R.id.friendsEmptyState)
+        val viewRequestsButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.viewRequestsButton)
 
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        
+        viewRequestsButton.setOnClickListener {
+            startActivity(android.content.Intent(this, FriendRequestsActivity::class.java))
+        }
 
-        adapter = FriendListAdapter()
+        adapter = FriendListAdapter { profile ->
+            viewModel.unfriend(profile.id)
+        }
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
@@ -72,7 +79,18 @@ class FriendsListActivity : AppCompatActivity() {
                 viewModel.error.collect { error ->
                     error?.let {
                         Snackbar.make(recyclerView, it, Snackbar.LENGTH_LONG).show()
-                        viewModel.clearError()
+                        viewModel.clearMessages()
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.infoMessage.collect { message ->
+                    message?.let {
+                        Snackbar.make(recyclerView, it, Snackbar.LENGTH_SHORT).show()
+                        viewModel.clearMessages()
                     }
                 }
             }

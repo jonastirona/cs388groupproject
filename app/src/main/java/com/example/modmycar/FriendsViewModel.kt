@@ -24,6 +24,9 @@ class FriendsViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _infoMessage = MutableStateFlow<String?>(null)
+    val infoMessage: StateFlow<String?> = _infoMessage.asStateFlow()
+
     private var currentUserId: String? = null
 
     fun setCurrentUserId(userId: String) {
@@ -48,6 +51,24 @@ class FriendsViewModel(
     }
 
     fun clearError() {
+        _error.value = null
+    }
+
+    fun unfriend(friendUserId: String) {
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            try {
+                repository.unfriend(userId, friendUserId)
+                _friends.value = _friends.value.filterNot { it.id == friendUserId }
+                _infoMessage.value = "Friend removed"
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to unfriend"
+            }
+        }
+    }
+
+    fun clearMessages() {
+        _infoMessage.value = null
         _error.value = null
     }
 }
