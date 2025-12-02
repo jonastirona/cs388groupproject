@@ -15,12 +15,6 @@ class FriendRequestsActivity : SimplePlaceholderActivity() {
         "Pending friend requests will be displayed here."
 }
 
-class MyPostsActivity : SimplePlaceholderActivity() {
-    override val screenTitle: String = "My Posts"
-    override val descriptionText: String =
-        "This section will show posts you have created."
-}
-
 class ModTreeActivity : SimplePlaceholderActivity() {
     override val screenTitle: String = "Mod Tree"
     override val descriptionText: String =

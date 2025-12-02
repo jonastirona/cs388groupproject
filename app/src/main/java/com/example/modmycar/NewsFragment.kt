@@ -116,7 +116,7 @@ class NewsFragment : Fragment(R.layout.fragment_news) {
                     } else if (user == null && !appliedUserInterests) {
                         // No authenticated user; just load the default feed once.
                         appliedUserInterests = true
-                        newsViewModel.refresh()
+        newsViewModel.refresh()
                     }
                 }
             }

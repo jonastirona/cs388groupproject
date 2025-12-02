@@ -66,4 +66,22 @@ class SupabasePostRepository(
             filter { eq("id", postId) }
         }
     }
+
+    override suspend fun getPostsByUserId(userId: String, limit: Int, offset: Int): List<Post> {
+        val response = client.from("posts")
+            .select(
+                columns = Columns.raw("*, user_id, profiles:profiles!posts_user_id_fkey(id, username, display_name)")
+            ) {
+                filter {
+                    eq("user_id", userId)
+                    eq("status", "active")
+                }
+                order("created_at", Order.DESCENDING)
+            }
+
+        val all = response.decodeList<Post>()
+        val from = offset.coerceAtLeast(0).coerceAtMost(all.size)
+        val to = (from + limit).coerceAtMost(all.size)
+        return all.subList(from, to)
+    }
 }

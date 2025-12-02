@@ -13,7 +13,8 @@ class FeedViewModel(
             SupabasePostRepository(SupabaseClient.client)
         } catch (e: Exception) {
             LocalPostRepository() // fallback for offline / testing
-        }
+        },
+    private val userId: String? = null // If provided, only show posts from this user
 ) : ViewModel() {
 
     private val _posts = MutableStateFlow<List<Post>>(emptyList())
@@ -76,5 +77,11 @@ class FeedViewModel(
     }
 
     private suspend fun fetchPostsPage(limit: Int, offset: Int) =
-        runCatching { repository.getFeed(limit, offset) }
+        runCatching {
+            if (userId != null) {
+                repository.getPostsByUserId(userId, limit, offset)
+            } else {
+                repository.getFeed(limit, offset)
+            }
+        }
 }
