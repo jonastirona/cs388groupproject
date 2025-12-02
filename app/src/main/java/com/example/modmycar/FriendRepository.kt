@@ -91,9 +91,9 @@ class SupabaseFriendRepository(
 class LocalFriendRepository : FriendRepository {
 
     private val demoProfiles = listOf(
-        UserProfile(id = "demo-1", username = "boosted_ben", display_name = "Boosted Ben"),
-        UserProfile(id = "demo-2", username = "turbo_tina", display_name = "Turbo Tina"),
-        UserProfile(id = "demo-3", username = "garage_gary", display_name = "Garage Gary")
+        UserProfile(id = "demo-1", username = "boosted_ben", displayName = "Boosted Ben"),
+        UserProfile(id = "demo-2", username = "turbo_tina", displayName = "Turbo Tina"),
+        UserProfile(id = "demo-3", username = "garage_gary", displayName = "Garage Gary")
     )
 
     override suspend fun getFriends(userId: String): List<UserProfile> = demoProfiles

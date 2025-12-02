@@ -2,12 +2,13 @@ package com.example.modmycar
 
 import android.app.Activity
 import android.content.Intent
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -29,12 +30,13 @@ class PostDetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: PostDetailViewModel
     private lateinit var commentsAdapter: CommentsAdapter
-
-    // 🔹 Audio playback state
-    private var mediaPlayer: MediaPlayer? = null
-    private var currentlyPlayingUrl: String? = null
+    private lateinit var deletePostButton: ImageButton
 
     private var exoPlayer: ExoPlayer? = null
+    private var currentAudioUrl: String? = null
+    private var currentVideoUrl: String? = null
+    private var isAudioPlaying: Boolean = false
+    private var postWasDeleted: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +72,12 @@ class PostDetailActivity : AppCompatActivity() {
         val commentInput = findViewById<EditText>(R.id.commentInput)
         val sendCommentButton = findViewById<MaterialButton>(R.id.sendCommentButton)
         val commentsRecyclerView = findViewById<RecyclerView>(R.id.commentsRecyclerView)
+        deletePostButton = findViewById(R.id.deletePostButton)
+
+        // Delete button click handler
+        deletePostButton.setOnClickListener {
+            showDeleteConfirmationDialog()
+        }
 
         likeButton.setOnClickListener {
             val currentUserId = try {
@@ -128,7 +136,10 @@ class PostDetailActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.post.collect { post ->
-                    post?.let { updatePostViews(it) }
+                    post?.let { 
+                        updatePostViews(it)
+                        updateDeleteButtonVisibility()
+                    }
                 }
             }
         }
@@ -164,6 +175,60 @@ class PostDetailActivity : AppCompatActivity() {
                 }
             }
         }
+
+        // Observe delete state
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isDeleting.collect { isDeleting ->
+                    deletePostButton.isEnabled = !isDeleting
+                    if (isDeleting) {
+                        Snackbar.make(
+                            findViewById(android.R.id.content),
+                            "Deleting post...",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
+
+        // Observe post deleted
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.postDeleted.collect { deleted ->
+                    if (deleted) {
+                        postWasDeleted = true
+                        Snackbar.make(
+                            findViewById(android.R.id.content),
+                            "Post deleted successfully",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                        // Return to feed
+                        setResult(RESULT_POST_DELETED)
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateDeleteButtonVisibility() {
+        deletePostButton.visibility = if (viewModel.isCurrentUserPostAuthor()) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Post")
+            .setMessage("Are you sure you want to delete this post? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                viewModel.deletePost()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun updatePostViews(post: Post) {
@@ -177,7 +242,11 @@ class PostDetailActivity : AppCompatActivity() {
         val audioIcon = findViewById<ImageView>(R.id.audioIcon)
 
         captionView.text = post.caption ?: "(no caption)"
-        metaView.text = "by ${post.userId}"
+        val displayName = post.authorProfile?.displayName
+            ?: post.authorProfile?.username
+            ?: post.userId.take(8)
+
+        metaView.text = "by $displayName"
 
         val videoContainer = findViewById<View>(R.id.videoPlayerContainer)
         val videoView = findViewById<PlayerView>(R.id.videoPlayerView)
@@ -186,26 +255,33 @@ class PostDetailActivity : AppCompatActivity() {
         if (videoUrl != null) {
             videoContainer.visibility = View.VISIBLE
             imageView.visibility = View.GONE
-            audioPreview.visibility = View.GONE
+            audioPreview.visibility = View.GONE // Hide audio if video exists
 
-            if (exoPlayer == null) {
+            // Only setup player if not already playing this video
+            if (currentVideoUrl != videoUrl) {
+                currentVideoUrl = videoUrl
+                
+                // Release any existing player
+                exoPlayer?.release()
                 exoPlayer = ExoPlayer.Builder(this).build()
-            }
 
-            videoView.player = exoPlayer
-            val mediaItem = MediaItem.fromUri(videoUrl)
-            exoPlayer?.setMediaItem(mediaItem)
-            exoPlayer?.prepare()
-            exoPlayer?.play()
+                videoView.player = exoPlayer
+                val mediaItem = MediaItem.fromUri(videoUrl)
+                exoPlayer?.setMediaItem(mediaItem)
+                exoPlayer?.prepare()
+                exoPlayer?.playWhenReady = true
+            }
         } else {
             videoContainer.visibility = View.GONE
+            currentVideoUrl = null
         }
 
+        // Only show audio controls if there's no video
         val audioUrl = post.media.firstOrNull { it.type == "audio" && it.url.isNotBlank() }?.url
-        if (audioUrl != null) {
+        if (audioUrl != null && videoUrl == null) {
             audioPreview.visibility = View.VISIBLE
 
-            if (audioUrl == currentlyPlayingUrl) {
+            if (audioUrl == currentAudioUrl && isAudioPlaying) {
                 audioIcon.setImageResource(android.R.drawable.ic_media_pause)
             } else {
                 audioIcon.setImageResource(android.R.drawable.ic_media_play)
@@ -233,35 +309,33 @@ class PostDetailActivity : AppCompatActivity() {
     }
 
     private fun handleAudioPlayback(url: String, icon: ImageView) {
-        if (mediaPlayer != null && currentlyPlayingUrl == url) {
-            if (mediaPlayer!!.isPlaying) {
-                mediaPlayer!!.pause()
+        if (exoPlayer == null) {
+            exoPlayer = ExoPlayer.Builder(this).build()
+        }
+
+        val player = exoPlayer!!
+
+        if (currentAudioUrl == url) {
+            if (player.isPlaying) {
+                player.pause()
+                isAudioPlaying = false
                 icon.setImageResource(android.R.drawable.ic_media_play)
             } else {
-                mediaPlayer!!.start()
+                player.play()
+                isAudioPlaying = true
                 icon.setImageResource(android.R.drawable.ic_media_pause)
             }
             return
         }
-        if (mediaPlayer != null) {
-            mediaPlayer!!.stop()
-            mediaPlayer!!.release()
-            mediaPlayer = null
-        }
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(url)
 
-            setOnPreparedListener {
-                start()
-                icon.setImageResource(android.R.drawable.ic_media_pause)
-            }
-            setOnCompletionListener {
-                icon.setImageResource(android.R.drawable.ic_media_play)
-                currentlyPlayingUrl = null
-            }
-            prepareAsync()
-        }
-        currentlyPlayingUrl = url
+        val mediaItem = MediaItem.fromUri(url)
+        player.setMediaItem(mediaItem)
+        player.prepare()
+        player.play()
+
+        currentAudioUrl = url
+        isAudioPlaying = true
+        icon.setImageResource(android.R.drawable.ic_media_pause)
     }
 
     override fun finish() {
@@ -283,13 +357,8 @@ class PostDetailActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
-
         exoPlayer?.release()
         exoPlayer = null
-
         super.onDestroy()
     }
 
@@ -297,6 +366,7 @@ class PostDetailActivity : AppCompatActivity() {
         const val EXTRA_POST_ID = "extra_post_id"
         const val EXTRA_POST_LIKES = "extra_post_likes"
         const val EXTRA_POST_COMMENTS = "extra_post_comments"
+        const val RESULT_POST_DELETED = 100
     }
 }
 

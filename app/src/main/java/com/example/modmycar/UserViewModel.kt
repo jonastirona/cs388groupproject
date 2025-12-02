@@ -46,7 +46,7 @@ class UserViewModel(
             val profile = UserProfile(
                 id = userId,
                 username = username,
-                display_name = displayName
+                displayName = displayName
             )
             when (val result = userRepository.createProfile(profile)) {
                 is AuthResult.Success -> {

@@ -15,11 +15,18 @@ class PostDetailViewModel(
         LocalPostRepository()
     },
     private val commentRepository: CommentRepository = SupabaseCommentRepository(SupabaseClient.client),
-    private val likeRepository: LikeRepository = SupabaseLikeRepository(SupabaseClient.client)
+    private val likeRepository: LikeRepository = SupabaseLikeRepository(SupabaseClient.client),
+    private val postStorageService: PostStorageService = SupabasePostStorageService()
 ) : ViewModel() {
 
     private val _post = MutableStateFlow<Post?>(null)
     val post: StateFlow<Post?> = _post.asStateFlow()
+
+    private val _isDeleting = MutableStateFlow(false)
+    val isDeleting: StateFlow<Boolean> = _isDeleting.asStateFlow()
+
+    private val _postDeleted = MutableStateFlow(false)
+    val postDeleted: StateFlow<Boolean> = _postDeleted.asStateFlow()
 
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     val comments: StateFlow<List<Comment>> = _comments.asStateFlow()
@@ -136,6 +143,55 @@ class PostDetailViewModel(
 
     fun clearError() {
         _error.value = null
+    }
+
+    fun deletePost() {
+        val post = _post.value ?: return
+        val userId = currentUserId ?: return
+
+        // Verify user owns this post
+        if (post.userId != userId) {
+            _error.value = "You can only delete your own posts"
+            return
+        }
+
+        viewModelScope.launch {
+            _isDeleting.value = true
+            try {
+                // Delete media files from storage
+                val mediaFileNames = post.media.mapIndexed { index, media ->
+                    val extension = when {
+                        media.url.contains(".jpg", ignoreCase = true) -> "jpg"
+                        media.url.contains(".jpeg", ignoreCase = true) -> "jpg"
+                        media.url.contains(".png", ignoreCase = true) -> "png"
+                        media.url.contains(".mp4", ignoreCase = true) -> "mp4"
+                        media.url.contains(".mov", ignoreCase = true) -> "mov"
+                        media.url.contains(".webm", ignoreCase = true) -> "webm"
+                        else -> "bin"
+                    }
+                    "${media.type}_${index + 1}.$extension"
+                }
+
+                if (mediaFileNames.isNotEmpty()) {
+                    postStorageService.deleteAllPostMedia(userId, post.id, mediaFileNames)
+                }
+
+                // Delete post from database
+                postRepository.deletePost(post.id)
+
+                _postDeleted.value = true
+            } catch (e: Exception) {
+                _error.value = "Failed to delete post: ${e.message}"
+            } finally {
+                _isDeleting.value = false
+            }
+        }
+    }
+
+    fun isCurrentUserPostAuthor(): Boolean {
+        val post = _post.value ?: return false
+        val userId = currentUserId ?: return false
+        return post.userId == userId
     }
 
     private suspend fun refreshPostState(postId: String) {
