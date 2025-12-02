@@ -40,7 +40,7 @@
         android:padding="12dp"
         android:background="#1A000000"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/tvCaption"
+        app:layout_constraintTop_toBottomOf="@id/postImage"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 

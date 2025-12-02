@@ -12,11 +12,13 @@ data class ModHierarchyItem(
     val modId: String,
     val name: String,
     val category: String?,
+    val isCompleted: Boolean = false,
     val children: List<ModHierarchyItem> = emptyList()
 )
 
 class ModHierarchyAdapter(
-    private val mods: List<ModHierarchyItem>
+    private var mods: List<ModHierarchyItem>,
+    private val onModToggled: (modId: String, isCompleted: Boolean) -> Unit
 ) : RecyclerView.Adapter<ModHierarchyAdapter.ModViewHolder>() {
 
     private val expandedItems = mutableSetOf<String>()
@@ -38,7 +40,12 @@ class ModHierarchyAdapter(
         val mod = mods[position]
         val isExpanded = expandedItems.contains(mod.modId)
 
-        holder.modNameTextView.text = mod.name
+        // Indicate completion with a simple prefix
+        holder.modNameTextView.text = if (mod.isCompleted) {
+            "✓ ${mod.name}"
+        } else {
+            mod.name
+        }
 
         // Set expand/collapse icon
         holder.expandCollapseIcon.setImageResource(
@@ -58,13 +65,25 @@ class ModHierarchyAdapter(
                 val childView = LayoutInflater.from(holder.itemView.context)
                     .inflate(R.layout.item_child_mod, holder.childrenContainer, false)
                 val childNameTextView = childView.findViewById<TextView>(R.id.childModNameTextView)
-                childNameTextView.text = childMod.name
+
+                childNameTextView.text = if (childMod.isCompleted) {
+                    "✓ ${childMod.name}"
+                } else {
+                    childMod.name
+                }
+
+                // Toggle completion on child click
+                childView.setOnClickListener {
+                    onModToggled(childMod.modId, !childMod.isCompleted)
+                }
+
                 holder.childrenContainer.addView(childView)
             }
         } else {
             holder.childrenContainer.visibility = View.GONE
         }
 
+        // Expand/collapse on header click
         holder.modHeaderLayout.setOnClickListener {
             if (mod.children.isNotEmpty()) {
                 if (isExpanded) {
@@ -73,10 +92,18 @@ class ModHierarchyAdapter(
                     expandedItems.add(mod.modId)
                 }
                 notifyItemChanged(position)
+            } else {
+                // Leaf node without children: toggle completion directly
+                onModToggled(mod.modId, !mod.isCompleted)
             }
         }
     }
 
     override fun getItemCount(): Int = mods.size
+
+    fun updateMods(newMods: List<ModHierarchyItem>) {
+        mods = newMods
+        notifyDataSetChanged()
+    }
 }
 
