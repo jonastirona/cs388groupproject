@@ -18,7 +18,6 @@ import java.util.UUID
 
 /**
  * Fetches automotive articles from NewsAPI /v2/everything endpoint using Retrofit.
- * Uses annotations instead of direct HTTP calls, with async coroutines.
  */
 class NewsApiRepository(
     private val api: NewsApiService = defaultApiService,
@@ -27,7 +26,6 @@ class NewsApiRepository(
 ) {
     /**
      * Asynchronously fetches articles from NewsAPI.
-     * Uses suspend function for coroutine-based async execution.
      */
     suspend fun getArticles(limit: Int = 20, offset: Int = 0): List<NewsArticleSummary> = withContext(Dispatchers.IO) {
         val apiKey = NEWS_API_KEY

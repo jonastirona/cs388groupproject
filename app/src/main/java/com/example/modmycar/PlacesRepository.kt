@@ -54,8 +54,6 @@ class GooglePlacesRepository(
     ): AuthResult<List<Shop>> = withContext(Dispatchers.IO) {
         return@withContext try {
             // Use Places API Nearby Search via REST API
-            // Since the Places SDK doesn't have a direct nearby search,
-            // we'll use the REST API with Retrofit
             val shops = searchNearbyShopsRestApi(latitude, longitude, radius)
             AuthResult.Success(shops)
         } catch (e: Exception) {
