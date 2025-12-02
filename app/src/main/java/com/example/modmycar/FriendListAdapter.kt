@@ -41,3 +41,4 @@ class FriendListAdapter : RecyclerView.Adapter<FriendListAdapter.ViewHolder>() {
 
 
 
+

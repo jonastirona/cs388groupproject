@@ -18,7 +18,8 @@ data class ModHierarchyItem(
 
 class ModHierarchyAdapter(
     private var mods: List<ModHierarchyItem>,
-    private val onModToggled: (modId: String, isCompleted: Boolean) -> Unit
+    private val onModToggled: (modId: String, isCompleted: Boolean) -> Unit,
+    private val isReadOnly: Boolean = false
 ) : RecyclerView.Adapter<ModHierarchyAdapter.ModViewHolder>() {
 
     private val expandedItems = mutableSetOf<String>()
@@ -72,9 +73,14 @@ class ModHierarchyAdapter(
                     childMod.name
                 }
 
-                // Toggle completion on child click
-                childView.setOnClickListener {
-                    onModToggled(childMod.modId, !childMod.isCompleted)
+                // Toggle completion on child click (only if not read-only)
+                if (!isReadOnly) {
+                    childView.setOnClickListener {
+                        onModToggled(childMod.modId, !childMod.isCompleted)
+                    }
+                } else {
+                    childView.isClickable = false
+                    childView.alpha = 0.7f // Visual indicator that it's read-only
                 }
 
                 holder.childrenContainer.addView(childView)
@@ -86,16 +92,22 @@ class ModHierarchyAdapter(
         // Expand/collapse on header click
         holder.modHeaderLayout.setOnClickListener {
             if (mod.children.isNotEmpty()) {
+                // Always allow expand/collapse
                 if (isExpanded) {
                     expandedItems.remove(mod.modId)
                 } else {
                     expandedItems.add(mod.modId)
                 }
                 notifyItemChanged(position)
-            } else {
-                // Leaf node without children: toggle completion directly
+            } else if (!isReadOnly) {
+                // Leaf node without children: toggle completion directly (only if not read-only)
                 onModToggled(mod.modId, !mod.isCompleted)
             }
+        }
+        
+        // Visual indicator for read-only mode
+        if (isReadOnly && mod.children.isEmpty()) {
+            holder.modHeaderLayout.alpha = 0.7f
         }
     }
 
