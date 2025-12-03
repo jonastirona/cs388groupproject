@@ -24,6 +24,7 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import android.view.View
 
 class CarDetailActivity : AppCompatActivity() {
 
@@ -44,6 +45,8 @@ class CarDetailActivity : AppCompatActivity() {
     private val maintenanceRepository: MaintenanceRepository = SupabaseMaintenanceRepository()
 
     private var currentUserId: String? = null
+    private var carOwnerId: String? = null
+    private var isOwner: Boolean = false
 
     private val garageCarRepository: GarageCarRepository = SupabaseGarageCarRepository()
 
@@ -100,13 +103,8 @@ class CarDetailActivity : AppCompatActivity() {
         val yearShort = if (currentYear > 0) "'${currentYear.toString().takeLast(2)}" else ""
         carModelYearTextView.text = "$carMake $carModel $yearShort"
 
-        // Set color preview
-        val colorPreviewView = findViewById<android.view.View>(R.id.colorPreviewView)
-        try {
-            colorPreviewView.setBackgroundColor(Color.parseColor(currentColor))
-        } catch (e: Exception) {
-            colorPreviewView.setBackgroundColor(Color.parseColor("#FF0000"))
-        }
+        // Set color preview (will be updated when garage car is loaded)
+        updateColorPreview()
 
         // Color picker button
         findViewById<MaterialButton>(R.id.colorPickerButton).setOnClickListener {
@@ -126,6 +124,9 @@ class CarDetailActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.deleteCarButton).setOnClickListener {
             showDeleteConfirmationDialog()
         }
+        
+        // Load garage car to determine owner
+        loadGarageCarOwner()
 
         // Add media button
         findViewById<FloatingActionButton>(R.id.addMediaFAB).setOnClickListener {
@@ -133,47 +134,99 @@ class CarDetailActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadGarageCarOwner() {
+        val localGarageCarId = garageCarId ?: return
+        
+        lifecycleScope.launch {
+            when (val result = garageCarRepository.getGarageCar(localGarageCarId)) {
+                is AuthResult.Success -> {
+                    val garageCar = result.data
+                    if (garageCar != null) {
+                        carOwnerId = garageCar.userId
+                        
+                        // Update color and year from database
+                        garageCar.color?.let { 
+                            currentColor = it
+                            updateColorPreview()
+                        }
+                        garageCar.year?.let { currentYear = it }
+                        
+                        // Get current user
+                        val userResult = authRepository.getCurrentSession()
+                        currentUserId = when (userResult) {
+                            is AuthResult.Success -> userResult.data?.id
+                            is AuthResult.Error -> null
+                        }
+                        
+                        isOwner = currentUserId == carOwnerId
+                        
+                        // Hide edit buttons if not owner
+                        if (!isOwner) {
+                            findViewById<MaterialButton>(R.id.colorPickerButton).visibility = View.GONE
+                            findViewById<MaterialButton>(R.id.deleteCarButton).visibility = View.GONE
+                            findViewById<FloatingActionButton>(R.id.addMediaFAB).visibility = View.GONE
+                        }
+                        
+                        // Update adapter to be read-only if not owner
+                        modHierarchyAdapter = ModHierarchyAdapter(
+                            emptyList(),
+                            onModToggled = { modId, isCompleted ->
+                                if (isOwner) {
+                                    toggleGarageMod(modId, isCompleted)
+                                }
+                            },
+                            isReadOnly = !isOwner
+                        )
+                        modHierarchyRecyclerView.adapter = modHierarchyAdapter
+                        
+                        // Load mod hierarchy for the car owner
+                        val localCarId = carId
+                        if (localCarId != null && carOwnerId != null) {
+                            loadModHierarchy(localCarId, carOwnerId!!)
+                        }
+                    }
+                }
+                is AuthResult.Error -> {
+                    Toast.makeText(
+                        this@CarDetailActivity,
+                        "Failed to load car: ${result.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+    
+    private fun updateColorPreview() {
+        val colorPreviewView = findViewById<android.view.View>(R.id.colorPreviewView)
+        try {
+            val color = Color.parseColor(currentColor)
+            colorPreviewView.setBackgroundColor(color)
+            // Also update the card background if needed
+            val colorPreviewCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorPreviewCard)
+            colorPreviewCard.setCardBackgroundColor(color)
+        } catch (e: Exception) {
+            val defaultColor = Color.parseColor("#FF0000")
+            colorPreviewView.setBackgroundColor(defaultColor)
+            val colorPreviewCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.colorPreviewCard)
+            colorPreviewCard.setCardBackgroundColor(defaultColor)
+        }
+    }
+
     private fun setupModHierarchy() {
         modHierarchyRecyclerView = findViewById(R.id.modHierarchyRecyclerView)
         modHierarchyRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        modHierarchyAdapter = ModHierarchyAdapter(emptyList()) { modId, isCompleted ->
-            toggleGarageMod(modId, isCompleted)
-        }
+        // Adapter will be created/updated in loadGarageCarOwner() after we know if user is owner
+        modHierarchyAdapter = ModHierarchyAdapter(
+            emptyList(),
+            onModToggled = { _, _ -> },
+            isReadOnly = true // Default to read-only until we know ownership
+        )
         modHierarchyRecyclerView.adapter = modHierarchyAdapter
-
-        // Load current user and mod tree
-        lifecycleScope.launch {
-            val userResult = authRepository.getCurrentSession()
-            currentUserId = when (userResult) {
-                is AuthResult.Success -> userResult.data?.id
-                is AuthResult.Error -> null
-            }
-
-            if (currentUserId == null) {
-                Toast.makeText(
-                    this@CarDetailActivity,
-                    "Please sign in to track mods",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@launch
-            }
-
-            val localCarId = carId
-            if (localCarId == null) {
-                Toast.makeText(
-                    this@CarDetailActivity,
-                    "Car information not found",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@launch
-            }
-
-            loadModHierarchy(localCarId, currentUserId!!)
-        }
     }
 
-    private suspend fun loadModHierarchy(carId: String, userId: String) {
+    private suspend fun loadModHierarchy(carId: String, ownerUserId: String) {
         // Get mod tree for this car
         val modTreeResult = modRepository.getModTree(carId)
         if (modTreeResult is AuthResult.Error) {
@@ -187,8 +240,11 @@ class CarDetailActivity : AppCompatActivity() {
 
         val modTree = (modTreeResult as AuthResult.Success).data
 
-        // Get completed mods for this user
-        val garageModsResult = garageModRepository.getGarageModsByUserId(userId)
+        // Get all mod IDs for this car
+        val allModIdsForCar = modTree.flatMap { collectModIds(it) }.toSet()
+
+        // Get completed mods for the car owner (not current user)
+        val garageModsResult = garageModRepository.getGarageModsByUserId(ownerUserId)
         if (garageModsResult is AuthResult.Error) {
             Toast.makeText(
                 this,
@@ -198,7 +254,10 @@ class CarDetailActivity : AppCompatActivity() {
             return
         }
 
-        val completedModIds = (garageModsResult as AuthResult.Success).data
+        // Filter to only mods that belong to this specific car
+        val ownerMods = (garageModsResult as AuthResult.Success).data
+        val completedModIds = ownerMods
+            .filter { it.modId in allModIdsForCar } // Only mods for this car
             .map { it.modId }
             .toSet()
 
@@ -218,8 +277,17 @@ class CarDetailActivity : AppCompatActivity() {
             modHierarchyAdapter.updateMods(rootItems)
         }
     }
+    
+    private fun collectModIds(node: ModWithChildren): List<String> {
+        return listOf(node.mod.id) + node.children.flatMap { collectModIds(it) }
+    }
 
     private fun toggleGarageMod(modId: String, isCompleted: Boolean) {
+        if (!isOwner) {
+            Toast.makeText(this, "You can only modify your own cars", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         val userId = currentUserId
         if (userId == null) {
             Toast.makeText(this, "Please sign in to track mods", Toast.LENGTH_SHORT).show()
@@ -238,8 +306,8 @@ class CarDetailActivity : AppCompatActivity() {
                     is AuthResult.Success -> {
                         // Reload hierarchy to reflect change
                         val localCarId = carId
-                        if (localCarId != null) {
-                            loadModHierarchy(localCarId, userId)
+                        if (localCarId != null && carOwnerId != null) {
+                            loadModHierarchy(localCarId, carOwnerId!!)
                         }
                     }
                     is AuthResult.Error -> {
@@ -260,8 +328,8 @@ class CarDetailActivity : AppCompatActivity() {
                         }
 
                         val localCarId = carId
-                        if (localCarId != null) {
-                            loadModHierarchy(localCarId, userId)
+                        if (localCarId != null && carOwnerId != null) {
+                            loadModHierarchy(localCarId, carOwnerId!!)
                         }
                     }
                     is AuthResult.Error -> {
@@ -422,6 +490,11 @@ class CarDetailActivity : AppCompatActivity() {
     }
     
     private fun updateCarColor(newColor: String) {
+        if (!isOwner) {
+            Toast.makeText(this, "You can only modify your own cars", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         if (garageCarId == null) {
             Toast.makeText(this, "Car ID not found", Toast.LENGTH_SHORT).show()
             return
@@ -432,8 +505,7 @@ class CarDetailActivity : AppCompatActivity() {
             when (val result = garageCarRepository.updateGarageCar(garageCarId!!, update)) {
                 is AuthResult.Success -> {
                     currentColor = newColor
-                    findViewById<android.view.View>(R.id.colorPreviewView)
-                        .setBackgroundColor(Color.parseColor(currentColor))
+                    updateColorPreview()
                     Toast.makeText(this@CarDetailActivity, "Color updated", Toast.LENGTH_SHORT).show()
                 }
                 is AuthResult.Error -> {
@@ -464,6 +536,11 @@ class CarDetailActivity : AppCompatActivity() {
     }
     
     private fun deleteCar() {
+        if (!isOwner) {
+            Toast.makeText(this, "You can only delete your own cars", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         if (garageCarId == null) {
             Toast.makeText(this, "Car ID not found", Toast.LENGTH_SHORT).show()
             return

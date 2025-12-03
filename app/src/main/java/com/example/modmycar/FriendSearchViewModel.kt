@@ -49,10 +49,14 @@ class FriendSearchViewModel(
         }
     }
 
+    private val _searchResults = MutableStateFlow<List<UserWithFriendshipStatus>>(emptyList())
+    val searchResults: StateFlow<List<UserWithFriendshipStatus>> = _searchResults.asStateFlow()
+
     fun search(query: String) {
         val userId = currentUserId ?: return
         val trimmed = query.trim()
         if (trimmed.isEmpty()) {
+            _searchResults.value = emptyList()
             _results.value = emptyList()
             return
         }
@@ -62,7 +66,9 @@ class FriendSearchViewModel(
             _error.value = null
             try {
                 val exclude = currentFriendIds + userId
-                _results.value = repository.searchUsers(trimmed, exclude.toSet())
+                val resultsWithStatus = repository.searchUsers(trimmed, exclude.toSet(), userId)
+                _searchResults.value = resultsWithStatus
+                _results.value = resultsWithStatus.map { it.user }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Search failed"
             } finally {
@@ -71,18 +77,70 @@ class FriendSearchViewModel(
         }
     }
 
-    fun addFriend(targetUserId: String) {
+    fun sendFriendRequest(targetUserId: String) {
         val userId = currentUserId ?: return
-        if (currentFriendIds.contains(targetUserId)) return
 
         viewModelScope.launch {
             try {
-                repository.addFriend(userId, targetUserId)
-                currentFriendIds += targetUserId
-                _results.value = _results.value.filterNot { it.id == targetUserId }
-                _infoMessage.value = "Friend added!"
+                repository.sendFriendRequest(userId, targetUserId)
+                // Update the status in search results
+                _searchResults.value = _searchResults.value.map { result ->
+                    if (result.user.id == targetUserId) {
+                        result.copy(friendshipStatus = FriendshipStatus.PENDING_OUTGOING)
+                    } else {
+                        result
+                    }
+                }
+                _infoMessage.value = "Friend request sent!"
             } catch (e: Exception) {
-                _error.value = e.message ?: "Unable to add friend"
+                _error.value = e.message ?: "Unable to send friend request"
+            }
+        }
+    }
+
+    fun cancelFriendRequest(targetUserId: String) {
+        val userId = currentUserId ?: return
+
+        viewModelScope.launch {
+            try {
+                val sentRequests = repository.getSentRequests(userId)
+                val requestPair = sentRequests.find { it.first.id == targetUserId }
+                
+                if (requestPair != null) {
+                    repository.cancelFriendRequest(requestPair.second)
+                    // Update the status in search results
+                    _searchResults.value = _searchResults.value.map { result ->
+                        if (result.user.id == targetUserId) {
+                            result.copy(friendshipStatus = FriendshipStatus.NONE)
+                        } else {
+                            result
+                        }
+                    }
+                    _infoMessage.value = "Friend request cancelled"
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Unable to cancel friend request"
+            }
+        }
+    }
+
+    fun acceptFriendRequest(requestId: String, targetUserId: String) {
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            try {
+                repository.acceptFriendRequest(requestId, userId)
+                // Update the status in search results
+                _searchResults.value = _searchResults.value.map { result ->
+                    if (result.user.id == targetUserId) {
+                        result.copy(friendshipStatus = FriendshipStatus.FRIENDS)
+                    } else {
+                        result
+                    }
+                }
+                currentFriendIds += targetUserId
+                _infoMessage.value = "Friend request accepted!"
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Unable to accept friend request"
             }
         }
     }
@@ -92,6 +150,7 @@ class FriendSearchViewModel(
         _error.value = null
     }
 }
+
 
 
 

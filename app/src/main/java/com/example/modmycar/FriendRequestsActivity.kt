@@ -17,50 +17,50 @@ import com.google.android.material.snackbar.Snackbar
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 
-class FriendsListActivity : AppCompatActivity() {
+class FriendRequestsActivity : AppCompatActivity() {
 
-    private val viewModel: FriendsViewModel by viewModels()
-    private lateinit var adapter: FriendListAdapter
+    private val viewModel: FriendRequestsViewModel by viewModels()
+    private lateinit var adapter: FriendRequestsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_friends_list)
+        setContentView(R.layout.activity_friend_requests)
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.friendsToolbar)
-        val recyclerView = findViewById<RecyclerView>(R.id.friendsRecyclerView)
-        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.friendsSwipeRefresh)
-        val progressBar = findViewById<View>(R.id.friendsProgress)
-        val emptyState = findViewById<TextView>(R.id.friendsEmptyState)
-        val viewRequestsButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.viewRequestsButton)
+        val toolbar = findViewById<MaterialToolbar>(R.id.friendRequestsToolbar)
+        val recyclerView = findViewById<RecyclerView>(R.id.friendRequestsRecyclerView)
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.friendRequestsSwipeRefresh)
+        val progressBar = findViewById<View>(R.id.friendRequestsProgress)
+        val emptyState = findViewById<TextView>(R.id.friendRequestsEmptyState)
 
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
-        
-        viewRequestsButton.setOnClickListener {
-            startActivity(android.content.Intent(this, FriendRequestsActivity::class.java))
-        }
 
-        adapter = FriendListAdapter { profile ->
-            viewModel.unfriend(profile.id)
-        }
+        adapter = FriendRequestsAdapter(
+            onAccept = { requestId, profile ->
+                viewModel.acceptRequest(requestId, profile)
+            },
+            onReject = { requestId ->
+                viewModel.rejectRequest(requestId)
+            }
+        )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        swipeRefresh.setOnRefreshListener { viewModel.refresh() }
+        swipeRefresh.setOnRefreshListener { viewModel.loadPendingRequests() }
 
         lifecycleScope.launch {
             try {
                 val session = SupabaseClient.client.auth.currentSessionOrNull()
                 session?.user?.id?.let { viewModel.setCurrentUserId(it) }
             } catch (_: Exception) {
-                Snackbar.make(recyclerView, "Please sign in to view friends.", Snackbar.LENGTH_LONG).show()
+                Snackbar.make(recyclerView, "Please sign in to view friend requests.", Snackbar.LENGTH_LONG).show()
             }
         }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.friends.collect { friends ->
-                    adapter.submitList(friends)
-                    emptyState.isVisible = friends.isEmpty()
+                viewModel.pendingRequests.collect { requests ->
+                    adapter.submitList(requests)
+                    emptyState.isVisible = requests.isEmpty()
                 }
             }
         }

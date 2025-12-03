@@ -3,6 +3,7 @@ package com.example.modmycar
 interface PostRepository {
     // Feed
     suspend fun getFeed(limit: Int = 20, offset: Int = 0): List<Post>
+    suspend fun getPostsByUserId(userId: String, limit: Int = 20, offset: Int = 0): List<Post>
 
     // CRUD
     suspend fun createPost(post: Post): Post
@@ -41,5 +42,16 @@ class LocalPostRepository : PostRepository {
 
     override suspend fun deletePost(postId: String) {
         throw UnsupportedOperationException("LocalPostRepository: deletePost not supported (use SupabasePostRepository)")
+    }
+
+    override suspend fun getPostsByUserId(userId: String, limit: Int, offset: Int): List<Post> {
+        val all = LocalPostDataSource
+            .getSamplePosts()
+            .filter { it.userId == userId }
+            .sortedByDescending { it.createdAt }
+
+        val from = offset.coerceAtLeast(0).coerceAtMost(all.size)
+        val to = (from + limit).coerceAtMost(all.size)
+        return all.subList(from, to)
     }
 }

@@ -37,9 +37,17 @@ class FriendSearchActivity : AppCompatActivity() {
 
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
-        adapter = FriendSearchAdapter { profile ->
-            viewModel.addFriend(profile.id)
-        }
+        adapter = FriendSearchAdapter(
+            onSendRequest = { profile ->
+                viewModel.sendFriendRequest(profile.id)
+            },
+            onCancelRequest = { profile ->
+                viewModel.cancelFriendRequest(profile.id)
+            },
+            onAcceptRequest = { requestId, profile ->
+                viewModel.acceptFriendRequest(requestId, profile.id)
+            }
+        )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
@@ -69,7 +77,7 @@ class FriendSearchActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.results.collect { results ->
+                viewModel.searchResults.collect { results ->
                     adapter.submitList(results)
                     emptyState.isVisible = results.isEmpty()
                 }
@@ -107,6 +115,7 @@ class FriendSearchActivity : AppCompatActivity() {
         }
     }
 }
+
 
 
 

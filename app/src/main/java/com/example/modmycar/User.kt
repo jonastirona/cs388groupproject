@@ -17,7 +17,13 @@ data class UserProfile(
     val username: String? = null,
 
     @SerialName("display_name")
-    val displayName: String? = null
+    val displayName: String? = null,
+    
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    
+    @SerialName("location_updated_at")
+    val locationUpdatedAt: String? = null
 ) {
     val display_name: String?
         get() = displayName

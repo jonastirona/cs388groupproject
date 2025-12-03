@@ -6,7 +6,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class FriendListAdapter : RecyclerView.Adapter<FriendListAdapter.ViewHolder>() {
+class FriendListAdapter(
+    private val onUnfriend: (UserProfile) -> Unit
+) : RecyclerView.Adapter<FriendListAdapter.ViewHolder>() {
 
     private val friends = mutableListOf<UserProfile>()
 
@@ -19,7 +21,7 @@ class FriendListAdapter : RecyclerView.Adapter<FriendListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_friend, parent, false)
-        return ViewHolder(view)
+        return ViewHolder(view, onUnfriend)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -28,16 +30,22 @@ class FriendListAdapter : RecyclerView.Adapter<FriendListAdapter.ViewHolder>() {
 
     override fun getItemCount(): Int = friends.size
 
-    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ViewHolder(
+        itemView: View,
+        private val onUnfriend: (UserProfile) -> Unit
+    ) : RecyclerView.ViewHolder(itemView) {
         private val nameView: TextView = itemView.findViewById(R.id.friendName)
         private val usernameView: TextView = itemView.findViewById(R.id.friendUsername)
+        private val unfriendButton: com.google.android.material.button.MaterialButton = itemView.findViewById(R.id.unfriendButton)
 
         fun bind(profile: UserProfile) {
             nameView.text = profile.display_name ?: profile.username ?: "Unknown"
             usernameView.text = profile.username?.let { "@$it" } ?: ""
+            unfriendButton.setOnClickListener { onUnfriend(profile) }
         }
     }
 }
+
 
 
 

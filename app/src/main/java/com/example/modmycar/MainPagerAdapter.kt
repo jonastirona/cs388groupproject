@@ -10,7 +10,7 @@ class MainPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activi
 
     override fun createFragment(position: Int): Fragment {
         return when (position) {
-            0 -> PostsFragment()
+            0 -> PostsFragment.newInstance() // No userId = show all posts
             else -> NewsFragment()
         }
     }

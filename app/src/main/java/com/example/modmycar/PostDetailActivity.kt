@@ -233,6 +233,7 @@ class PostDetailActivity : AppCompatActivity() {
 
     private fun updatePostViews(post: Post) {
         val captionView = findViewById<TextView>(R.id.postCaption)
+        val descriptionView = findViewById<TextView>(R.id.postDescription)
         val metaView = findViewById<TextView>(R.id.postMeta)
         val imageView = findViewById<ImageView>(R.id.postImage)
         val likeCountView = findViewById<TextView>(R.id.likeCount)
@@ -242,6 +243,14 @@ class PostDetailActivity : AppCompatActivity() {
         val audioIcon = findViewById<ImageView>(R.id.audioIcon)
 
         captionView.text = post.caption ?: "(no caption)"
+        
+        // Display description if available
+        if (post.description != null && post.description.isNotBlank()) {
+            descriptionView.text = post.description
+            descriptionView.visibility = View.VISIBLE
+        } else {
+            descriptionView.visibility = View.GONE
+        }
         val displayName = post.authorProfile?.displayName
             ?: post.authorProfile?.username
             ?: post.userId.take(8)

@@ -18,7 +18,14 @@ import kotlinx.coroutines.launch
 
 class PostsFragment : Fragment(R.layout.fragment_posts) {
 
-    private val feedViewModel: FeedViewModel by viewModels()
+    private val feedViewModel: FeedViewModel by viewModels {
+        val userId = arguments?.getString(ARG_USER_ID)
+        if (userId != null) {
+            FeedViewModelFactory(userId)
+        } else {
+            FeedViewModelFactory()
+        }
+    }
     private lateinit var adapter: FeedAdapter
     private val postDetailLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -39,6 +46,13 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         val recyclerView = view.findViewById<RecyclerView>(R.id.postsRecyclerView)
         val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.postsSwipeRefresh)
         val progressBar = view.findViewById<View>(R.id.postsProgressBar)
+        val emptyView = view.findViewById<android.widget.TextView>(R.id.postsEmptyState)
+        
+        // Update empty state text based on whether showing user posts or all posts
+        val isMyPosts = arguments?.getString(ARG_USER_ID) != null
+        if (isMyPosts) {
+            emptyView.text = "You haven't posted anything yet"
+        }
 
         adapter = FeedAdapter(onPostClick = { post ->
             val intent = Intent(requireContext(), PostDetailActivity::class.java).apply {
@@ -79,7 +93,9 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 feedViewModel.isLoading.collect { loading ->
-                    progressBar.isVisible = loading && adapter.itemCount == 0
+                    val hasPosts = adapter.itemCount > 0
+                    progressBar.isVisible = loading && !hasPosts
+                    emptyView.isVisible = !loading && !hasPosts
                 }
             }
         }
@@ -104,6 +120,30 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         }
 
         feedViewModel.refresh()
+    }
+
+    companion object {
+        private const val ARG_USER_ID = "user_id"
+
+        fun newInstance(userId: String? = null): PostsFragment {
+            return PostsFragment().apply {
+                arguments = Bundle().apply {
+                    userId?.let { putString(ARG_USER_ID, it) }
+                }
+            }
+        }
+    }
+}
+
+class FeedViewModelFactory(
+    private val userId: String? = null
+) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(FeedViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return FeedViewModel(userId = userId) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 

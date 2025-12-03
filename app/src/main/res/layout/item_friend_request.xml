@@ -21,14 +21,14 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/searchFriendName"
+                android:id="@+id/requestFriendName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textStyle="bold"
                 android:textSize="16sp" />
 
             <TextView
-                android:id="@+id/searchFriendUsername"
+                android:id="@+id/requestFriendUsername"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="?android:attr/textColorSecondary"
@@ -37,15 +37,18 @@
         </LinearLayout>
 
         <Button
-            android:id="@+id/addFriendButton"
+            android:id="@+id/rejectRequestButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add" />
+            android:text="Reject"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/acceptRequestButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Accept" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
-
-
-
-
 

@@ -9,6 +9,7 @@ interface UserRepository {
     suspend fun getProfile(userId: String): AuthResult<UserProfile?>
     suspend fun createProfile(profile: UserProfile): AuthResult<UserProfile>
     suspend fun updateProfile(userId: String, username: String?, displayName: String?): AuthResult<UserProfile>
+    suspend fun updateLocation(userId: String, latitude: Double, longitude: Double): AuthResult<UserProfile>
     suspend fun deleteProfile(userId: String): AuthResult<Unit>
 }
 
@@ -75,6 +76,40 @@ class SupabaseUserRepository(
                 "Failed to update profile: ${e.message}"
             }
             AuthResult.Error(errorMessage, e)
+        }
+    }
+
+    override suspend fun updateLocation(userId: String, latitude: Double, longitude: Double): AuthResult<UserProfile> {
+        return try {
+            val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }.format(java.util.Date())
+            
+            // Get existing profile to preserve other fields
+            val existingProfileResult = getProfile(userId)
+            val existingProfile = when (existingProfileResult) {
+                is AuthResult.Success -> existingProfileResult.data
+                is AuthResult.Error -> null
+            }
+            
+            // Create updated profile with location, preserving existing fields
+            val updatedProfile = UserProfile(
+                id = userId,
+                username = existingProfile?.username,
+                displayName = existingProfile?.displayName,
+                latitude = latitude,
+                longitude = longitude,
+                locationUpdatedAt = timestamp
+            )
+            
+            // Use upsert to update (or create if doesn't exist)
+            val updated = supabaseClient.from("profiles")
+                .upsert(updatedProfile) {
+                    select(Columns.ALL)
+                }.decodeSingle<UserProfile>()
+            AuthResult.Success(updated)
+        } catch (e: Exception) {
+            AuthResult.Error("Failed to update location: ${e.message}", e)
         }
     }
 

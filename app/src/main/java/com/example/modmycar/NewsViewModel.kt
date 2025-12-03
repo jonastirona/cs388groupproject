@@ -23,10 +23,29 @@ class NewsViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    /**
+     * Raw user interest keywords derived from their posts, cars, mods, and liked posts.
+     *
+     * This is intentionally simple: the screen (or another higher-level component) is responsible
+     * for collecting and updating this list. The news layer then uses it to personalize queries.
+     */
+    var userKeywords: List<String> = emptyList()
+        private set
+
     private val pageSize = 20
     private var nextOffset = 0
     private var loading = false
     private var endReached = false
+
+    /**
+     * Updates the current user interest keywords that will be used for subsequent news requests.
+     *
+     * Calling this does not automatically refresh; callers can explicitly call [refresh] if they
+     * want to immediately reload the feed with the new interests.
+     */
+    fun setUserKeywords(keywords: List<String>) {
+        userKeywords = keywords
+    }
 
     fun refresh() {
         if (loading) return
@@ -43,7 +62,13 @@ class NewsViewModel(
         _isLoading.value = true
 
         viewModelScope.launch {
-            val result = runCatching { repository.getArticles(limit = pageSize, offset = nextOffset) }
+            val result = runCatching {
+                repository.getArticles(
+                    limit = pageSize,
+                    offset = nextOffset,
+                    userKeywords = userKeywords
+                )
+            }
             result.onSuccess { page ->
                 if (page.isNotEmpty()) {
                     nextOffset += page.size

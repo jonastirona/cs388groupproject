@@ -14,6 +14,7 @@ interface LikeRepository {
     suspend fun likePost(postId: String, userId: String): Like
     suspend fun unlikePost(postId: String, userId: String)
     suspend fun getLikeCount(postId: String): Int
+    suspend fun getLikesByUser(userId: String): List<Like>
 }
 
 class SupabaseLikeRepository(
@@ -65,6 +66,15 @@ class SupabaseLikeRepository(
                 filter { eq("post_id", postId) }
             }
         return response.decodeList<Like>().size
+    }
+
+    override suspend fun getLikesByUser(userId: String): List<Like> {
+        val response = client.from("likes")
+            .select {
+                filter { eq("user_id", userId) }
+                order("created_at", Order.DESCENDING)
+            }
+        return response.decodeList<Like>()
     }
 
     private suspend fun adjustPostLikeCount(postId: String, delta: Int) {
