@@ -70,6 +70,8 @@ class FeedAdapter(
         val imageView = holder.itemView.findViewById<ImageView>(R.id.postImage)
         val audioPreview = holder.itemView.findViewById<View>(R.id.audioPreviewContainer)
         val audioIcon = holder.itemView.findViewById<ImageView>(R.id.audioIcon)
+        val videoPreviewContainer = holder.itemView.findViewById<View>(R.id.videoPreviewContainer)
+        val videoThumbnail = holder.itemView.findViewById<ImageView>(R.id.videoThumbnail)
 
         val hasImage = post.media.any { it.type == "image" && it.url.isNotBlank() }
         val hasAudio = post.media.any { it.type == "audio" && it.url.isNotBlank() }
@@ -79,27 +81,48 @@ class FeedAdapter(
         val audioUrl = post.media.firstOrNull { it.type == "audio" }?.url
         val videoUrl = post.media.firstOrNull { it.type == "video" }?.url
 
+        // Hide all media containers initially
         imageView.visibility = View.GONE
         audioPreview.visibility = View.GONE
-        // No video UI on the main feed
+        videoPreviewContainer.visibility = View.GONE
 
-        if (hasAudio && audioUrl != null) {
-            audioPreview.visibility = View.VISIBLE
-            imageView.visibility = View.GONE
-            if (post.id == currentlyPlayingPostId) {
-                audioIcon.setImageResource(android.R.drawable.ic_media_pause)
-            } else {
-                audioIcon.setImageResource(android.R.drawable.ic_media_play)
+        // Priority: Video > Audio > Image
+        when {
+            hasVideo && videoUrl != null -> {
+                // Show video preview with thumbnail
+                videoPreviewContainer.visibility = View.VISIBLE
+                imageView.visibility = View.GONE
+                audioPreview.visibility = View.GONE
+                // Load video thumbnail using Coil's video frame decoder
+                try {
+                    videoThumbnail.load(videoUrl) {
+                        videoFrameMillis(1000) // Extract frame at 1 second
+                        crossfade(true)
+                        error(android.R.drawable.ic_media_play) // Fallback icon if loading fails
+                    }
+                } catch (e: Exception) {
+                    // If video thumbnail loading fails, show a placeholder
+                    videoThumbnail.setImageResource(android.R.drawable.ic_media_play)
+                }
             }
-            audioPreview.setOnClickListener {
-                handleAudioPlayback(post.id, audioUrl, audioIcon)
+            hasAudio && audioUrl != null -> {
+                audioPreview.visibility = View.VISIBLE
+                imageView.visibility = View.GONE
+                videoPreviewContainer.visibility = View.GONE
+                if (post.id == currentlyPlayingPostId) {
+                    audioIcon.setImageResource(android.R.drawable.ic_media_pause)
+                } else {
+                    audioIcon.setImageResource(android.R.drawable.ic_media_play)
+                }
+                audioPreview.setOnClickListener {
+                    handleAudioPlayback(post.id, audioUrl, audioIcon)
+                }
             }
-        } else if (hasImage && firstImage != null) {
-            imageView.visibility = View.VISIBLE
-            imageView.load(firstImage) { crossfade(true) }
-
-        } else {
-            imageView.visibility = View.GONE
+            hasImage && firstImage != null -> {
+                imageView.visibility = View.VISIBLE
+                videoPreviewContainer.visibility = View.GONE
+                imageView.load(firstImage) { crossfade(true) }
+            }
         }
 
         // Update like and comment counts

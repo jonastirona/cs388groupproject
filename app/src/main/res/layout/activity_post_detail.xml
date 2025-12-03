@@ -52,6 +52,15 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
+            <!-- Post Description -->
+            <TextView
+                android:id="@+id/postDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
+
             <!-- Audio Preview -->
             <LinearLayout
                 android:id="@+id/audioPreviewContainer"
