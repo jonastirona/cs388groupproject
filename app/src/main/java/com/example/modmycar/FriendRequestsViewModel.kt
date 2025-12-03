@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class FriendsViewModel(
+class FriendRequestsViewModel(
     private val repository: FriendRepository = try {
         SupabaseFriendRepository(SupabaseClient.client)
     } catch (e: Exception) {
@@ -15,8 +15,8 @@ class FriendsViewModel(
     }
 ) : ViewModel() {
 
-    private val _friends = MutableStateFlow<List<UserProfile>>(emptyList())
-    val friends: StateFlow<List<UserProfile>> = _friends.asStateFlow()
+    private val _pendingRequests = MutableStateFlow<List<Pair<UserProfile, String>>>(emptyList())
+    val pendingRequests: StateFlow<List<Pair<UserProfile, String>>> = _pendingRequests.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -30,39 +30,46 @@ class FriendsViewModel(
     private var currentUserId: String? = null
 
     fun setCurrentUserId(userId: String) {
-        if (userId == currentUserId) return
         currentUserId = userId
-        refresh()
+        loadPendingRequests()
     }
 
-    fun refresh() {
+    fun loadPendingRequests() {
         val userId = currentUserId ?: return
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {
-                _friends.value = repository.getFriends(userId)
+                _pendingRequests.value = repository.getPendingRequests(userId)
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load friends"
+                _error.value = e.message ?: "Failed to load friend requests"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun clearError() {
-        _error.value = null
-    }
-
-    fun unfriend(friendUserId: String) {
+    fun acceptRequest(requestId: String, userProfile: UserProfile) {
         val userId = currentUserId ?: return
         viewModelScope.launch {
             try {
-                repository.unfriend(userId, friendUserId)
-                _friends.value = _friends.value.filterNot { it.id == friendUserId }
-                _infoMessage.value = "Friend removed"
+                repository.acceptFriendRequest(requestId, userId)
+                _pendingRequests.value = _pendingRequests.value.filterNot { it.second == requestId }
+                _infoMessage.value = "Friend request accepted!"
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to unfriend"
+                _error.value = e.message ?: "Unable to accept friend request"
+            }
+        }
+    }
+
+    fun rejectRequest(requestId: String) {
+        viewModelScope.launch {
+            try {
+                repository.rejectFriendRequest(requestId)
+                _pendingRequests.value = _pendingRequests.value.filterNot { it.second == requestId }
+                _infoMessage.value = "Friend request rejected"
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Unable to reject friend request"
             }
         }
     }
@@ -72,7 +79,4 @@ class FriendsViewModel(
         _error.value = null
     }
 }
-
-
-
 

@@ -21,14 +21,14 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/friendName"
+                android:id="@+id/requestFriendName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textStyle="bold"
                 android:textSize="16sp" />
 
             <TextView
-                android:id="@+id/friendUsername"
+                android:id="@+id/requestFriendUsername"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="?android:attr/textColorSecondary"
@@ -36,19 +36,19 @@
                 android:layout_marginTop="4dp" />
         </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/unfriendButton"
+        <Button
+            android:id="@+id/rejectRequestButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Unfriend"
-            android:textColor="@android:color/white"
-            app:backgroundTint="@android:color/holo_red_dark" />
+            android:text="Reject"
+            android:layout_marginEnd="8dp" />
 
+        <Button
+            android:id="@+id/acceptRequestButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Accept" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
-
-
-
-
 

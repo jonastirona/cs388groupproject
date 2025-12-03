@@ -198,11 +198,7 @@ class PopularBuildsActivity : AppCompatActivity() {
 // NearbyShopsActivity has been moved to its own file with full implementation
 
 
-class FriendRequestsActivity : SimplePlaceholderActivity() {
-    override val screenTitle: String = "Friend Requests"
-    override val descriptionText: String =
-        "Pending friend requests will be displayed here."
-}
+
 
 class ModTreeActivity : SimplePlaceholderActivity() {
     override val screenTitle: String = "Mod Tree"
