@@ -1,6 +1,7 @@
 package com.example.modmycar
 
 import android.app.AlertDialog
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -20,6 +21,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 class CarDetailActivity : AppCompatActivity() {
 
@@ -31,10 +35,13 @@ class CarDetailActivity : AppCompatActivity() {
     private lateinit var modHierarchyAdapter: ModHierarchyAdapter
     private lateinit var carMediaViewPager: ViewPager2
     private lateinit var carMediaAdapter: CarMediaAdapter
+    private lateinit var maintenanceRecyclerView: RecyclerView
+    private lateinit var maintenanceAdapter: MaintenanceAdapter
 
     private val modRepository: ModRepository = SupabaseModRepository()
     private val garageModRepository: GarageModRepository = SupabaseGarageModRepository()
     private val authRepository: AuthRepository = SupabaseAuthRepository()
+    private val maintenanceRepository: MaintenanceRepository = SupabaseMaintenanceRepository()
 
     private var currentUserId: String? = null
 
@@ -111,6 +118,9 @@ class CarDetailActivity : AppCompatActivity() {
 
         // Setup car media carousel
         setupCarMedia()
+
+        // Setup maintenance tracking
+        setupMaintenance()
 
         // Delete button
         findViewById<MaterialButton>(R.id.deleteCarButton).setOnClickListener {
@@ -274,6 +284,118 @@ class CarDetailActivity : AppCompatActivity() {
         
         carMediaAdapter = CarMediaAdapter(placeholderMedia)
         carMediaViewPager.adapter = carMediaAdapter
+    }
+
+    private fun setupMaintenance() {
+        maintenanceRecyclerView = findViewById(R.id.maintenanceRecyclerView)
+        maintenanceRecyclerView.layoutManager = LinearLayoutManager(this)
+
+        maintenanceAdapter = MaintenanceAdapter(emptyList()) { item ->
+            onMaintenanceItemClicked(item)
+        }
+        maintenanceRecyclerView.adapter = maintenanceAdapter
+
+        // Load maintenance items
+        val localGarageCarId = garageCarId
+        if (localGarageCarId != null) {
+            loadMaintenanceItems(localGarageCarId)
+        }
+    }
+
+    private fun loadMaintenanceItems(garageCarId: String) {
+        lifecycleScope.launch {
+            when (val result = maintenanceRepository.getMaintenanceItemsByCarId(garageCarId)) {
+                is AuthResult.Success -> {
+                    withContext(Dispatchers.Main) {
+                        maintenanceAdapter.updateItems(result.data)
+                    }
+                }
+                is AuthResult.Error -> {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@CarDetailActivity,
+                            "Failed to load maintenance items: ${result.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun onMaintenanceItemClicked(item: MaintenanceItem) {
+        val displayName = MaintenanceType.entries.find { it.typeName == item.type }?.displayName 
+            ?: item.type.replace("_", " ").replaceFirstChar { it.uppercase() }
+        
+        val options = arrayOf("Log Service Today", "Pick a Date", "Cancel")
+        
+        AlertDialog.Builder(this)
+            .setTitle(displayName)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> logServiceToday(item)
+                    1 -> showDatePickerForService(item)
+                    // 2 -> Cancel, do nothing
+                }
+            }
+            .show()
+    }
+
+    private fun logServiceToday(item: MaintenanceItem) {
+        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        updateMaintenanceServiceDate(item, today)
+    }
+
+    private fun showDatePickerForService(item: MaintenanceItem) {
+        val calendar = Calendar.getInstance()
+        
+        DatePickerDialog(
+            this,
+            { _, year, month, dayOfMonth ->
+                val selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+                val dateString = selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                updateMaintenanceServiceDate(item, dateString)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).apply {
+            // Don't allow future dates
+            datePicker.maxDate = System.currentTimeMillis()
+        }.show()
+    }
+
+    private fun updateMaintenanceServiceDate(item: MaintenanceItem, dateString: String) {
+        lifecycleScope.launch {
+            val update = MaintenanceItemUpdate(lastServiceDate = dateString)
+            
+            when (val result = maintenanceRepository.updateMaintenanceItem(item.id, update)) {
+                is AuthResult.Success -> {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@CarDetailActivity,
+                            "Service logged successfully!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        
+                        // Reload maintenance items to refresh the UI
+                        val localGarageCarId = garageCarId
+                        if (localGarageCarId != null) {
+                            loadMaintenanceItems(localGarageCarId)
+                        }
+                    }
+                }
+                is AuthResult.Error -> {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@CarDetailActivity,
+                            "Failed to log service: ${result.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     private fun showColorPickerDialog() {

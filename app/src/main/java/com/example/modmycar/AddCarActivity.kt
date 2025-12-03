@@ -23,6 +23,7 @@ class AddCarActivity : AppCompatActivity() {
     private val carRepository: CarRepository = SupabaseCarRepository()
     private val garageCarRepository: GarageCarRepository = SupabaseGarageCarRepository()
     private val authRepository: AuthRepository = SupabaseAuthRepository()
+    private val maintenanceRepository: MaintenanceRepository = SupabaseMaintenanceRepository()
     
     private var availableMakes: List<String> = emptyList()
     private var makeToModels: Map<String, List<String>> = emptyMap()
@@ -229,14 +230,31 @@ class AddCarActivity : AppCompatActivity() {
             
             when (val result = garageCarRepository.createGarageCar(garageCarCreate)) {
                 is AuthResult.Success -> {
-                    // Clear image cache to ensure fresh images are loaded when returning to garage
-                    CarImageService.clearCache()
-                    Toast.makeText(
-                        this@AddCarActivity,
-                        "Car saved successfully!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    finish()
+                    val newGarageCarId = result.data.id
+                    
+                    // Create default maintenance items for the new car
+                    when (val maintenanceResult = maintenanceRepository.createDefaultMaintenanceItems(newGarageCarId)) {
+                        is AuthResult.Success -> {
+                            // Clear image cache to ensure fresh images are loaded when returning to garage
+                            CarImageService.clearCache()
+                            Toast.makeText(
+                                this@AddCarActivity,
+                                "Car saved successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            finish()
+                        }
+                        is AuthResult.Error -> {
+                            // Car was created but maintenance items failed - still finish but warn user
+                            CarImageService.clearCache()
+                            Toast.makeText(
+                                this@AddCarActivity,
+                                "Car saved, but maintenance setup failed: ${maintenanceResult.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            finish()
+                        }
+                    }
                 }
                 is AuthResult.Error -> {
                     Toast.makeText(

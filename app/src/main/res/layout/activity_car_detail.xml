@@ -120,6 +120,29 @@
             app:layout_constraintTop_toTopOf="@id/carMediaViewPager"
             app:layout_constraintEnd_toEndOf="@id/carMediaViewPager" />
 
+        <!-- Maintenance Tracking Section -->
+        <TextView
+            android:id="@+id/maintenanceTrackingLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Maintenance Tracking"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/carMediaViewPager"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/maintenanceRecyclerView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:nestedScrollingEnabled="false"
+            app:layout_constraintTop_toBottomOf="@id/maintenanceTrackingLabel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
         <!-- Delete Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/deleteCarButton"
@@ -130,7 +153,7 @@
             android:textColor="@android:color/white"
             app:icon="@android:drawable/ic_menu_delete"
             app:backgroundTint="@android:color/holo_red_dark"
-            app:layout_constraintTop_toBottomOf="@id/carMediaViewPager"
+            app:layout_constraintTop_toBottomOf="@id/maintenanceRecyclerView"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
