@@ -26,13 +26,13 @@ class NewsViewModel(
     /**
      * Raw user interest keywords derived from their posts, cars, mods, and liked posts.
      *
-     * This is intentionally simple: the screen (or another higher-level component) is responsible
+     * The screen is responsible
      * for collecting and updating this list. The news layer then uses it to personalize queries.
      */
     var userKeywords: List<String> = emptyList()
         private set
 
-    private val pageSize = 20
+    private val pageSize = 100
     private var nextOffset = 0
     private var loading = false
     private var endReached = false
