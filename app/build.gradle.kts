@@ -44,6 +44,21 @@ android {
         )
         buildConfigField(
             "String",
+            "NEWS_API_KEY_1",
+            "\"${localProperties.getProperty("NEWS_API_KEY_1", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "NEWS_API_KEY_2",
+            "\"${localProperties.getProperty("NEWS_API_KEY_2", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "NEWS_API_KEY_3",
+            "\"${localProperties.getProperty("NEWS_API_KEY_3", "")}\""
+        )
+        buildConfigField(
+            "String",
             "GOOGLE_MAPS_API_KEY",
             "\"${localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")}\""
         )
@@ -112,6 +127,7 @@ dependencies {
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
     
     // Ktor for Supabase
