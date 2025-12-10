@@ -1,5 +1,6 @@
 package com.example.modmycar
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
@@ -36,12 +37,22 @@ class FriendsListActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
         
         viewRequestsButton.setOnClickListener {
-            startActivity(android.content.Intent(this, FriendRequestsActivity::class.java))
+            startActivity(Intent(this, FriendRequestsActivity::class.java))
         }
 
-        adapter = FriendListAdapter { profile ->
-            viewModel.unfriend(profile.id)
-        }
+        adapter = FriendListAdapter(
+            onFriendClick = { profile ->
+                // Navigate to friend's garage
+                val intent = Intent(this, FriendGarageActivity::class.java).apply {
+                    putExtra(FriendGarageActivity.EXTRA_FRIEND_ID, profile.id)
+                    putExtra(FriendGarageActivity.EXTRA_FRIEND_NAME, profile.displayName ?: profile.username ?: "Friend")
+                }
+                startActivity(intent)
+            },
+            onUnfriend = { profile ->
+                viewModel.unfriend(profile.id)
+            }
+        )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 

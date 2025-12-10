@@ -85,6 +85,9 @@
             android:name=".FriendRequestsActivity"
             android:exported="false" />
         <activity
+            android:name=".FriendGarageActivity"
+            android:exported="false" />
+        <activity
             android:name=".MyPostsActivity"
             android:exported="false" />
         <activity

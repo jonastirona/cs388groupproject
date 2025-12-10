@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class FriendListAdapter(
+    private val onFriendClick: (UserProfile) -> Unit,
     private val onUnfriend: (UserProfile) -> Unit
 ) : RecyclerView.Adapter<FriendListAdapter.ViewHolder>() {
 
@@ -21,7 +22,7 @@ class FriendListAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_friend, parent, false)
-        return ViewHolder(view, onUnfriend)
+        return ViewHolder(view, onFriendClick, onUnfriend)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -32,6 +33,7 @@ class FriendListAdapter(
 
     class ViewHolder(
         itemView: View,
+        private val onFriendClick: (UserProfile) -> Unit,
         private val onUnfriend: (UserProfile) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
         private val nameView: TextView = itemView.findViewById(R.id.friendName)
@@ -41,6 +43,11 @@ class FriendListAdapter(
         fun bind(profile: UserProfile) {
             nameView.text = profile.display_name ?: profile.username ?: "Unknown"
             usernameView.text = profile.username?.let { "@$it" } ?: ""
+            
+            // Click on the whole card to view friend's garage
+            itemView.setOnClickListener { onFriendClick(profile) }
+            
+            // Unfriend button
             unfriendButton.setOnClickListener { onUnfriend(profile) }
         }
     }
